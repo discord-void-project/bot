@@ -1,0 +1,14 @@
+model GuildLevelReward {
+    guildId String
+    atLevel Int
+
+    roleId      String?
+    xpReward    Int?
+    coinsReward Int?
+
+    guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+    @@id([guildId, atLevel])
+    @@unique([roleId, atLevel])
+    @@map("guild_level_rewards")
+}

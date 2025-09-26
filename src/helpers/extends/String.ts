@@ -1,0 +1,7 @@
+String.prototype.toCapitalize = function () {
+    return this.charAt(0).toUpperCase() + this.slice(1)
+}
+
+String.prototype.toUncapitalize = function () {
+    return this.charAt(0).toLowerCase() + this.slice(1)
+}

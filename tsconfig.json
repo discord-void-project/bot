@@ -1,0 +1,26 @@
+{
+    "compilerOptions": {
+        "target": "es2024",
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "esModuleInterop": true,
+        "noImplicitThis": true,
+        "noImplicitAny": true,
+        "declaration": false,
+        "skipLibCheck": true,
+        "strictNullChecks": true,
+        "resolveJsonModule": true,
+        "allowJs": true,
+        "outDir": "build",
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [ "./src/*" ],
+            "@pkg": [ "./package.json" ],
+        }
+    },
+    "include": [ "src" ],
+    "exclude": [
+        "node_modules",
+        "build"
+    ]
+}

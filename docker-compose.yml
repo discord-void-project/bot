@@ -1,0 +1,9 @@
+services:
+    prod:
+        container_name: bot-prod
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: void:latest
+        restart: always
+        env_file: .env.prod
