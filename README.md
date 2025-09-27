@@ -1,5 +1,5 @@
 <div align="center">
-    <h1>VOID</h1>
+    <h1>VØID</h1>
     <h6>(I currently don't have a r.i.p logo)</h6>
 	<p>
         <img alt="GitHub Release" src="https://img.shields.io/github/v/release/discord-void-project/bot?include_prereleases&sort=date&display_name=tag&style=flat&label=version&color=6886ff">
@@ -9,7 +9,7 @@
 </div>
 
 ## 👀 About
-🚀 **VØID** is a modern, modular, and powerful Discord bot built with **TypeScript** and **Prisma** !
+🚀 **Void** is a modern, modular, and powerful Discord bot built with **TypeScript** and **Prisma** !
 
 ## ✨ Features
 
