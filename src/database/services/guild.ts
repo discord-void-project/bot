@@ -100,9 +100,14 @@ const authorizeUserGuildBlacklist = async (guildId: string, userId: string) => {
 const unauthorizeUserGuildBlacklist = async (guildId: string, userId: string) => {
     let guildBlacklist = await findUserGuildBlacklist(guildId, userId);
     if (guildBlacklist) {
-        return await prisma.blacklistGuild.delete({
+        const data = await prisma.blacklistGuild.delete({
             where: { userId, guildId }
         });
+
+        return {
+            ...data,
+            accepted: false
+        }
     }
 }
 
