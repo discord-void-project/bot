@@ -8,7 +8,7 @@ import { UserFlags } from '@/database/utils'
 import { mainGuildConfig } from '@/client/config/mainGuild'
 
 import useEmojis from '@/ui/useEmojis'
-import container from '@/ui/container'
+import { ContainerUI } from '@/ui/ContainerUI'
 import { section, textDisplay, thumbnail } from '@/ui/components'
 
 import { formatCompactNumber } from '@/utils'
@@ -201,8 +201,8 @@ export default new Command({
         return await interaction.reply({
             flags: MessageFlags.IsComponentsV2,
             components: [
-                container.custom({
-                    accent_color: await getDominantColor(memberAvatar),
+                ContainerUI.create({
+                    color: await getDominantColor(memberAvatar),
                     components
                 })
             ]

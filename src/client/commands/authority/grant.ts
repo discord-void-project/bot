@@ -4,7 +4,7 @@ import { userService } from '@/database/services'
 import { UserFlags, UserFlagsString } from '@/database/utils'
 
 import { actionRow, button } from '@/ui/components'
-import embed from '@/ui/embed'
+import { EmbedUI } from '@/ui/EmbedUI'
 
 import { parseUserMention } from '@/utils'
 
@@ -22,7 +22,8 @@ export default new Command({
 
         if (!grade) return await message.reply({
             embeds: [
-                embed.red({
+                EmbedUI.createMessage({
+                    color: 'red',
                     title: "❌ Erreur d'attribution d’autorité",
                     description: "Tu dois préciser quelle autorité retirer, sinon je ne peux rien faire ^^'"
                 })
@@ -32,7 +33,8 @@ export default new Command({
         const flagName = grade.toUpperCase() as UserFlagsString;
         if (!(flagName in UserFlags)) return await message.reply({
             embeds: [
-                embed.red({
+                EmbedUI.createMessage({
+                    color: 'red',
                     title: "❌ Erreur d'attribution d’autorité",
                     description: `Je ne connais pas cette autorité, voici ceux que je reconnais **${Object.keys(UserFlags).join(', ')}**`
                 })
@@ -42,7 +44,8 @@ export default new Command({
         const userDatabase = await userService.findOrCreate(userId);
         if (userDatabase.flags.has(flagName)) return await message.reply({
             embeds: [
-                embed.red({
+                EmbedUI.createMessage({
+                    color: 'red',
                     title: "❌ Erreur d'attribution d’autorité",
                     description: `<@${userId}> \`(${userId})\` possède déjà l’autorité **${flagName}**, donc je ne peux pas lui attribuer 🤔`
                 })
@@ -56,7 +59,8 @@ export default new Command({
         const msg = await message.reply({
             content: `Parfait, j'ai attribué l'autorité **${flagName}** à <@${userId}> \`(${userId})\` !`,
             embeds: [
-                embed.green({
+                EmbedUI.createMessage({
+                    color: 'green',
                     title: "✅ Nouvelle autorité attribué",
                     fields: [
                         {
@@ -120,7 +124,8 @@ export default new Command({
 
             await DM.send({
                 embeds: [
-                    embed.indigo({
+                    EmbedUI.createMessage({
+                        color: 'purple',
                         title: '🔑 Nouvelle autorité débloquée',
                         description: messages.join('\n'),
                         timestamp: new Date().toISOString(),

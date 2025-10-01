@@ -2,7 +2,7 @@ import { Command } from '@/structures/Command'
 import { ApplicationCommandOptionType } from 'discord.js'
 
 import { guildService } from '@/database/services'
-import embed from '@/ui/embed'
+import { EmbedUI } from '@/ui/EmbedUI'
 
 export default new Command({
     access: {
@@ -46,7 +46,8 @@ export default new Command({
         if (blacklist) {
             return await interaction.reply({
                 embeds: [
-                    embed.red({
+                    EmbedUI.createMessage({
+                        color: 'red',
                         title: "Ajout d'un utilisateur sur blacklist",
                         description: `L'utilisateur \`${user.id}\` est déjà sur la blacklist, depuis <t:${formatTimestamp(blacklist.blacklistAt)}>`
                     })
@@ -68,7 +69,8 @@ export default new Command({
         return await interaction.reply({
             content: "Deux petites secondes.. Et voilà, j'ai transmis le signalement !",
             embeds: [
-                embed.green({
+                EmbedUI.createMessage({
+                    color: 'green',
                     title: "🕵️ Détails de la blacklist",
                     fields: [
                         {
@@ -89,7 +91,7 @@ export default new Command({
                     ],
                     footer: {
                         text: mod.username,
-                        icon_url: mod.avatarURL() ?? undefined,
+                        iconURL: mod.avatarURL() ?? undefined,
                     },
                     timestamp: new Date().toISOString()
                 }),

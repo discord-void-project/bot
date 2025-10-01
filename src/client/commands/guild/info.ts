@@ -1,10 +1,10 @@
 import { Command } from '@/structures/Command'
 import { ChannelType, ComponentType, GuildPremiumTier, MessageFlags } from 'discord.js'
 
-import { configColors, mainGuildConfig } from '@/client/config'
+import { COLORS, mainGuildConfig } from '@/client/config'
 
 import useEmojis from '@/ui/useEmojis'
-import container from '@/ui/container'
+import { ContainerUI } from '@/ui/ContainerUI'
 import { section, textDisplay, thumbnail } from '@/ui/components'
 
 import { escapeAllMarkdown, getDominantColor } from '@/utils'
@@ -114,8 +114,8 @@ export default new Command({
                 repliedUser: false
             },
             components: [
-                container.custom({
-                    accent_color: await getDominantColor(guild.iconURL({ forceStatic: true })!) as number ?? configColors.PURPLE,
+                ContainerUI.create({
+                    color: await getDominantColor(guild.iconURL({ forceStatic: true })!) as number ?? COLORS.purple,
                     components
                 })
             ]

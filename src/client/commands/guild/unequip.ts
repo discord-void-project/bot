@@ -4,7 +4,7 @@ import { GuildMember, MessageFlags } from 'discord.js'
 import { shopItemService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 
-import embed from '@/ui/embed'
+import { EmbedUI } from '@/ui/EmbedUI'
 import { actionRow, button } from '@/ui/components'
 
 export default new Command({
@@ -30,13 +30,16 @@ export default new Command({
 
         if (!roles.length) {
             return await interaction.reply({
-                embeds: [embed.red(`Vous n'avez aucun rôle payant d'équipé !`)]
+                embeds: [
+                    EmbedUI.createMessage(`Vous n'avez aucun rôle payant d'équipé !`, { color: 'red' })
+                ]
             });
         }
 
         const msg = await interaction.reply({
             embeds: [
-                embed.orange({
+                EmbedUI.createMessage({
+                    color: 'orange',
                     description: [
                         `Voulez-vous vraiment déséquipé votre rôle couleur ?`,
                         '-# Remarque : une fois le rôle supprimé vous ne serez pas **remboursé**'
@@ -64,16 +67,22 @@ export default new Command({
                 }
 
                 return await res.reply({
-                    embeds: [embed.green(`Le rôle couleur vous a bien été déséquipé !`)]
+                    embeds: [
+                        EmbedUI.createMessage(`Le rôle couleur vous a bien été déséquipé !`, { color: 'green' })
+                    ]
                 });
             }
 
             return await res.reply({
-                embeds: [embed.green(`Opération annnuler !`)]
+                embeds: [
+                    EmbedUI.createMessage(`Opération annnuler !`, { color: 'green' })
+                ]
             });
         } catch {
             return await msg.edit({
-                embeds: [embed.red(`Une erreur est survenu`)]
+                embeds: [
+                    EmbedUI.createMessage(`Une erreur est survenu`, { color: 'red' })
+                ]
             })
         }
     }

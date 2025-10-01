@@ -1,12 +1,10 @@
 import { ApplicationEmoji, Collection, GuildEmoji } from 'discord.js'
 
 import client from '@/client/instance'
-import config from '@/client/config/emojis'
-
-type EmojisList = typeof config;
+import { ApplicationEmojiName, currentApplicationEmoji } from '@/client/config/emojis'
 
 type EmojisObject = {
-    [Key in keyof EmojisList as `${Key & string}Emoji`]: GuildEmoji | ApplicationEmoji;
+    [Key in ApplicationEmojiName as `${Key & string}Emoji`]: GuildEmoji | ApplicationEmoji;
 };
 
 export default function useEmojis(): Partial<EmojisObject> {
@@ -15,7 +13,7 @@ export default function useEmojis(): Partial<EmojisObject> {
         ...client.application?.emojis.cache.entries() ?? [],
     ]);
 
-    return Object.entries(config)
+    return Object.entries(currentApplicationEmoji)
         .reduce((acc, [emojiName, emojiId]) => {
             const emoji = allEmojis.get(emojiId);
 

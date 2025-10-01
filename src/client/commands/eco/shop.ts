@@ -6,8 +6,8 @@ import { mainGuildConfig } from '@/client/config'
 
 import { actionRow, button, selectMenu, separator, textDisplay } from '@/ui/components'
 import useEmojis from '@/ui/useEmojis'
-import container from '@/ui/container'
-import embed from '@/ui/embed'
+import { ContainerUI } from '@/ui/ContainerUI'
+import { EmbedUI } from '@/ui/EmbedUI'
 
 import { formatCompactNumber } from '@/utils'
 
@@ -36,7 +36,7 @@ export default new Command({
         if (!allItems.length) {
             return await interaction.reply({
                 embeds: [
-                    embed.red(`Aucun article à vendre pour le moment`)
+                    EmbedUI.createMessage(`Aucun article à vendre pour le moment`, { color: 'red' })
                 ]
             });
         }
@@ -82,7 +82,8 @@ export default new Command({
             );
 
             return [
-                container.orange({
+                ContainerUI.create({
+                    color: 'orange',
                     components: [
                         textDisplay(`## Boutique de ${interaction.guild!.name}`),
                         (maxPages - 1) > 0 && textDisplay(`-# Page ${page + 1} / ${maxPages}`),
@@ -161,7 +162,7 @@ export default new Command({
                     return await i.followUp({
                         flags: MessageFlags.Ephemeral,
                         embeds: [
-                            embed.red(`Une erreur est survenu, l'article est introuvable :/`)
+                            EmbedUI.createMessage(`Une erreur est survenu, l'article est introuvable :/`, { color: 'red' })
                         ]
                     })
                 }
@@ -172,7 +173,7 @@ export default new Command({
                     return await i.followUp({
                         flags: MessageFlags.Ephemeral,
                         embeds: [
-                            embed.red(`Cet article n'est plus en stock !`)
+                            EmbedUI.createMessage(`Cet article n'est plus en stock !`, { color: 'red' })
                         ]
                     });
                 }
@@ -183,7 +184,7 @@ export default new Command({
                     return await i.followUp({
                         flags: MessageFlags.Ephemeral,
                         embeds: [
-                            embed.red(`Vous avez déjà acheter ce rôle !`)
+                            EmbedUI.createMessage(`Vous avez déjà acheter ce rôle !`, { color: 'red' })
                         ]
                     });
 
@@ -197,14 +198,15 @@ export default new Command({
                     return await i.followUp({
                         flags: MessageFlags.Ephemeral,
                         embeds: [
-                            embed.red(`Vous n'avez pas assez d'argent pour acheter cet article !`)
+                            EmbedUI.createMessage(`Vous n'avez pas assez d'argent pour acheter cet article !`, { color: 'red' })
                         ]
                     });
                 }
 
                 const msg = await i.update({
                     components: [
-                        container.orange({
+                        ContainerUI.create({
+                            color: 'orange',
                             components: [
                                 textDisplay(`Confirmer vous l'achat de l'article " <@&${item?.roleId}> " ?`),
                                 separator(),
@@ -248,7 +250,7 @@ export default new Command({
         collector.on('end', async (i) => {
             return await interaction.editReply({
                 components: [
-                    container.orange('Les **60** secondes sont écoulées 💡')
+                    ContainerUI.createMessage('Les **60** secondes sont écoulées 💡', { color: 'orange' })
                 ]
             });
         });

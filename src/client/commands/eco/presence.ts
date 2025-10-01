@@ -3,7 +3,7 @@ import { Command } from '@/structures/Command'
 import { guildSettingsService, memberService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 import { createCooldown } from '@/utils'
-import embed from '@/ui/embed'
+import { EmbedUI } from '@/ui/EmbedUI'
 
 interface handleCommandContext {
     userId: string;
@@ -42,7 +42,8 @@ const handleCommand = async ({
 
         return reply({
             embeds: [
-                embed.red({
+                EmbedUI.createMessage({
+                    color: 'red',
                     title: '⏳ Présence déjà effectuée',
                     description: `Vous devez attendre encore ${timeLeft} avant de refaire valoir votre présence.`,
                 })
@@ -61,7 +62,8 @@ const handleCommand = async ({
 
     return reply({
         embeds: [
-            embed.green({
+            EmbedUI.createMessage({
+                color: 'green',
                 title: `✅ Présence de ${username}`,
                 description: `Bravo ! Vous avez gagné **${reward} pièces** pour votre présence d'aujourd'hui !`,
             })

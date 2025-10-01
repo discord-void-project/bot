@@ -4,7 +4,7 @@ import { ApplicationCommandOptionType, MessageFlags } from 'discord.js'
 import { memberService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 import { createCooldown } from '@/utils'
-import embed from '@/ui/embed'
+import { EmbedUI } from '@/ui/EmbedUI'
 
 const SUCCESS_CHANCE = 0.2;
 const STEAL_PERCENTAGE = 0.25;
@@ -50,14 +50,24 @@ export default new Command({
 
         if (targetUser.bot) {
             return interaction.reply({
-                embeds: [embed.red({ title: '🤖 Impossible de voler un bot' })],
+                embeds: [
+                    EmbedUI.createMessage({
+                        color: 'red',
+                        title: '🤖 Impossible de voler un bot'
+                    })
+                ],
                 flags: MessageFlags.Ephemeral
             });
         }
 
         if (targetUser.id === robberId) {
             return interaction.reply({
-                embeds: [embed.red({ title: '🙃 Tu ne peux pas te voler toi-même' })],
+                embeds: [
+                    EmbedUI.createMessage({
+                        color: 'red',
+                        title: '🙃 Tu ne peux pas te voler toi-même'
+                    })
+                ],
                 flags: MessageFlags.Ephemeral
             });
         }
@@ -71,7 +81,8 @@ export default new Command({
         if (isActive) {
             return interaction.reply({
                 embeds: [
-                    embed.red({
+                    EmbedUI.createMessage({
+                        color: 'red',
                         title: '⏳ Cooldown',
                         description: `Tu dois attendre **1h** avant de voler à nouveau !`,
                     }),
@@ -102,7 +113,8 @@ export default new Command({
 
             return interaction.reply({
                 embeds: [
-                    embed.green({
+                    EmbedUI.createMessage({
+                        color: 'green',
                         title: '🕵️‍♂️ Vol réussi !',
                         description: `Tu as volé **${stolenAmount}** pièces à **${targetUser.username}** !`,
                     }),
@@ -130,7 +142,8 @@ export default new Command({
 
             return interaction.reply({
                 embeds: [
-                    embed.red({
+                    EmbedUI.createMessage({
+                        color: 'red',
                         title: '🚨 Vol échoué !',
                         description: `Tu t'es fait attraper et tu perds **${coinsDecrement + bankDecrement}** pièces en amende !`,
                     }),

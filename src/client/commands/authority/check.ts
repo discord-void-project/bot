@@ -4,7 +4,7 @@ import prisma from '@/database/prisma'
 import { guildService } from '@/database/services'
 
 import { actionRow, button } from '@/ui/components'
-import embed from '@/ui/embed'
+import { EmbedUI } from '@/ui/EmbedUI'
 
 import { parseUserMention } from '@/utils'
 
@@ -36,7 +36,8 @@ export default new Command({
         if (!userDatabase && !banInfo) {
             return await message.reply({
                 embeds: [
-                    embed.green({
+                    EmbedUI.createMessage({
+                        color: 'green',
                         title: "✅ Rapport d'autorité",
                         description: `L'utilisateur <@${userId}> \`(${userId})\` est **en règle** dans ce serveur.`
                     })
@@ -63,7 +64,8 @@ export default new Command({
 
             return {
                 embeds: [
-                    embed.indigo({
+                    EmbedUI.createMessage({
+                        color: 'purple',
                         title: "📋 Rapport d'autorité",
                         fields: [
                             {

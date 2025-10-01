@@ -2,7 +2,7 @@ import { Event } from '@/structures'
 import { guildService } from '@/database/services'
 
 import { actionRow, button } from '@/ui/components'
-import embed from '@/ui/embed'
+import { EmbedUI } from '@/ui/EmbedUI'
 
 export default new Event({
     name: 'guildMemberAdd',
@@ -23,7 +23,8 @@ export default new Event({
                     return await guild.safetyAlertsChannel.send({
                         content: `Oulah, il y a un membre qui a tenté de rejoindre mais il est sur mes listes noir du coup je l'ai banni, veux-tu que je l'autorise quand-même ?`,
                         embeds: [
-                            embed.orange({
+                            EmbedUI.createMessage({
+                                color: 'orange',
                                 title: '🕵️ info sur le membre blacklisté',
                                 fields: [
                                     {
@@ -53,7 +54,8 @@ export default new Event({
         if (this.client.mainGuild.id === guild.id) {
             await this.client.mainGuild.welcomeChannel.send({
                 embeds: [
-                    embed.indigo({
+                    EmbedUI.createMessage({
+                        color: 'indigo',
                         title: '˗ˏˋ ★ ˎˊ˗ Nouvelle invocation  ˗ˏˋ ★ ˎˊ˗',
                         description: [
                             `· · ─ ·✦· ─ · ·`,

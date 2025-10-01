@@ -4,7 +4,7 @@ import { userService } from '@/database/services'
 import { UserFlags, UserFlagsString } from '@/database/utils'
 
 import { actionRow, button } from '@/ui/components'
-import embed from '@/ui/embed'
+import { EmbedUI } from '@/ui/EmbedUI'
 
 import { parseUserMention } from '@/utils'
 
@@ -22,7 +22,8 @@ export default new Command({
 
         if (!grade) return await message.reply({
             embeds: [
-                embed.red({
+                EmbedUI.createMessage({
+                    color: 'red',
                     title: '❌ Erreur de retrait d’autorité',
                     description: "Tu dois préciser quelle autorité retirer, sinon je ne peux rien faire ^^'"
                 })
@@ -32,7 +33,8 @@ export default new Command({
         const flagName = grade.toUpperCase() as UserFlagsString;
         if (!(flagName in UserFlags)) return await message.reply({
             embeds: [
-                embed.red({
+                EmbedUI.createMessage({
+                    color: 'red',
                     title: '❌ Erreur de retrait d’autorité',
                     description: `Je ne connais pas cette autorité, voici ceux que je reconnais **${Object.keys(UserFlags).join(', ')}**`
                 })
@@ -42,7 +44,8 @@ export default new Command({
         const userDatabase = await userService.findOrCreate(userId);
         if (!userDatabase.flags.has(flagName)) return await message.reply({
             embeds: [
-                embed.red({
+                EmbedUI.createMessage({
+                    color: 'red',
                     title: '❌ Erreur de retrait d’autorité',
                     description: `<@${userId}> \`(${userId})\` ne possède pas l’autorité **${flagName}**, donc je ne peux pas la retirer 🤔`
                 })
@@ -56,7 +59,8 @@ export default new Command({
         const msg = await message.reply({
             content: `Parfait, j'ai retiré l'autorité **${flagName}** à <@${userId}> \`(${userId})\` !`,
             embeds: [
-                embed.green({
+                EmbedUI.createMessage({
+                    color: 'green',
                     title: "✅ Autorité retirée avec succès",
                     fields: [
                         {
@@ -95,7 +99,8 @@ export default new Command({
             const DM = await this.client.users.createDM(userId);
             if (DM.isSendable()) return await DM.send({
                 embeds: [
-                    embed.indigo({
+                    EmbedUI.createMessage({
+                        color: 'purple',
                         title: "🔑 Retrait d'autorité",
                         description: `Salut, je viens t’informer que ton autorité **${flagName}** a été retirée, merci encore pour ton implication jusque-là 💙`,
                         timestamp: new Date().toISOString(),
