@@ -1,7 +1,7 @@
 import { Command } from '@/structures'
 import { MessageFlags } from 'discord.js'
 
-import embed from '@/ui/embed'
+import { EmbedUI } from '@/ui/EmbedUI'
 import { mainGuildConfig } from '@/client/config/mainGuild'
 
 export default new Command({
@@ -21,14 +21,14 @@ export default new Command({
             return await interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [
-                    embed.red(`Le lockage ne prends pas encore en compte les salons textuel :c`)
+                    EmbedUI.createMessage(`Le lockage ne prends pas encore en compte les salons textuel :c`, { color: 'red' })
                 ]
             })
         };
 
         const msg = await interaction.reply({
             embeds: [
-                embed.orange(`Locking en cours..`)
+                EmbedUI.createMessage(`Locking en cours..`, { color: 'orange' })
             ]
         });
 
@@ -48,7 +48,7 @@ export default new Command({
 
         return await msg.edit({
             embeds: [
-                embed.green(`**${members.length}** personnes ont été muté`)
+                EmbedUI.createMessage(`**${members.length}** personnes ont été muté`, { color: 'green' })
             ]
         });
     }
