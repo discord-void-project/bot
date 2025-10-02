@@ -1,5 +1,5 @@
 import { Event } from '@/structures'
-import { EmbedUI } from '@/ui/EmbedUI'
+import embed from '@/ui/embed'
 
 export default new Event({
     name: 'messageDelete',
@@ -15,23 +15,21 @@ export default new Event({
         if (!logChannel) return;
 
         return await logChannel.send({
-            embeds: [
-                EmbedUI.createMessage({
-                    author: {
-                        name: message.author!.username,
-                        iconURL: message.author?.displayAvatarURL()
-                    },
-                    description: `🗑️ **Message supprimé dans <#${message.channel.id}>**`,
-                    fields: [{
-                        name: 'Contenu',
-                        value: message.content.slice(0, 1024)
-                    }],
-                    footer: {
-                        text: `UID: ${message.author!.id}`
-                    },
-                    timestamp: new Date().toISOString()
-                })
-            ]
+            embeds: [embed.red({
+                author: {
+                    name: message.author!.username,
+                    icon_url: message.author?.displayAvatarURL()
+                },
+                description: `🗑️ **Message supprimé dans <#${message.channel.id}>**`,
+                fields: [{
+                    name: 'Contenu',
+                    value: message.content.slice(0, 1024)
+                }],
+                footer: {
+                    text: `UID: ${message.author!.id}`
+                },
+                timestamp: new Date().toISOString()
+            })]
         });
     }
 })

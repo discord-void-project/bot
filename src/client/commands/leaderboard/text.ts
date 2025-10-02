@@ -3,7 +3,7 @@ import { Guild } from 'discord.js'
 
 import prisma from '@/database/prisma'
 import { mainGuildConfig } from '@/client/config/mainGuild'
-import { EmbedUI } from '@/ui/EmbedUI'
+import embed from '@/ui/embed'
 
 interface HandleLeaderboardContext {
     interactUserId: string;
@@ -23,9 +23,7 @@ const handleMessageLeaderboard = async ({
 
     if (!allMembers.length) {
         return reply({
-            embeds: [
-                EmbedUI.createMessage('Aucune donnée de messages', { color: 'yellow' })
-            ]
+            embeds: [embed.orange('Aucune donnée de messages')]
         });
     }
 
@@ -64,8 +62,7 @@ const handleMessageLeaderboard = async ({
 
     return reply({
         embeds: [
-            EmbedUI.createMessage({
-                color: 'orange',
+            embed.orange({
                 title: '💬 Classement des plus bavards',
                 description: [
                     `🧾 Total des messages sur le serveur : **${totalMessages.toLocaleString('fr-FR')}**\n`,

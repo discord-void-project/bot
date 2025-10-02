@@ -7,14 +7,15 @@ import { UserFlags } from '@/database/utils'
 
 import { mainGuildConfig } from '@/client/config/mainGuild'
 
-import { ContainerUI } from '@/ui/ContainerUI'
-import { createSection, createTextDisplay, createThumbnail } from '@/ui/components/common'
+import useEmojis from '@/ui/useEmojis'
+import container from '@/ui/container'
+import { section, textDisplay, thumbnail } from '@/ui/components'
 
 import { formatCompactNumber } from '@/utils'
 import { getXpProgress } from '@/utils/math'
 import { getDominantColor } from '@/utils/image'
 
-import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
+import { guildMemberHelper } from '@/helpers'
 
 export default new Command({
     nameLocalizations: {
@@ -47,14 +48,14 @@ export default new Command({
         }
     },
     async onInteraction(interaction) {
-        const { whiteArrowEmoji } = applicationEmojiHelper();
+        const { whiteArrowEmoji } = useEmojis();
 
         const member = (interaction.options.getMember('user') ?? interaction.member) as GuildMember;
         const isBot = member.user.bot;
 
         const memberHelper = await guildMemberHelper(member, { fetchUser: true });
         const memberAvatar = memberHelper.getAvatarURL({ forceStatic: true });
-        const memberBanner = memberHelper.getBannerURL({ size: 1024 });
+        const memberBanner = memberHelper.getBannerURL({ size: 512 });
 
         const createdAt = Math.floor(member.user.createdTimestamp / 1000);
         const joinedAt = Math.floor(member.joinedTimestamp! / 1000);
@@ -130,13 +131,11 @@ export default new Command({
             memberTitle = 'Robot Discord';
         }
 
-        const profileSection = createSection({
-            accessory: createThumbnail({
-                url: memberAvatar
-            }),
+        const profileSection = section({
+            accessory: thumbnail(memberAvatar),
             components: [
-                createTextDisplay(`## ${pseudo || username}${pseudo ? ` \`(${username})\`` : ''}`),
-                createTextDisplay([
+                textDisplay(`## ${pseudo || username}${pseudo ? ` \`(${username})\`` : ''}`),
+                textDisplay([
                     memberTitle && `-# *${memberTitle}*\n`,
                     `**Identifiant**\n- **\`${member.id}\`**`,
                     (userDatabase?.tagAssignedAt && hasGuildTag) && `**Porte le tag du serveur depuis**\n- <t:${userTagAssignedAt}>\n- <t:${userTagAssignedAt}:R>`,
@@ -181,17 +180,17 @@ export default new Command({
             }
 
             components.push(...[
-                isProgressionEnabled && createTextDisplay([
+                isProgressionEnabled && textDisplay([
                     '**Progression**',
                     `⚡ ${whiteArrowEmoji} Nv. **${userRecord.level}**${isLevelMax ? ' \`(MAX)\`' : ''}`,
                     !isLevelMax && `🧪 ${whiteArrowEmoji} **${formatCompactNumber(current)}** / **${formatCompactNumber(required)}**`
                 ].filter(Boolean).join('\n')),
-                isEcoEnabled && createTextDisplay([
+                isEcoEnabled && textDisplay([
                     '**Fonds**',
                     `🏦 ${whiteArrowEmoji} **${formatCompactNumber(userRecord.bank)}** / **${formatCompactNumber(50000)}** en banque`,
                     `💶 ${whiteArrowEmoji} **${formatCompactNumber(userRecord.coins)}** en poche`
                 ].join('\n')),
-                createTextDisplay([
+                textDisplay([
                     '**States**',
                     `💬 ${whiteArrowEmoji} ${userRecord.messageCount ? `**${formatCompactNumber(userRecord.messageCount)}** messages envoyés` : "Jamais écris"}`,
                     `🔊 ${whiteArrowEmoji} ${userRecord.voiceTotalMinutes ? `${formatTime(userRecord.voiceTotalMinutes)} en vocal` : 'Jamais parlé'}`
@@ -202,8 +201,8 @@ export default new Command({
         return await interaction.reply({
             flags: MessageFlags.IsComponentsV2,
             components: [
-                ContainerUI.create({
-                    color: await getDominantColor(memberAvatar),
+                container.custom({
+                    accent_color: await getDominantColor(memberAvatar),
                     components
                 })
             ]

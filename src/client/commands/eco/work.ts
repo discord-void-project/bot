@@ -3,7 +3,7 @@ import { Command } from '@/structures/Command'
 import { guildSettingsService, memberService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 
-import { EmbedUI } from '@/ui/EmbedUI'
+import embed from '@/ui/embed'
 import { createCooldown } from '@/utils'
 
 interface HandleWorkContext {
@@ -34,8 +34,7 @@ const handleWorkCommand = async ({
         const minutesLeft = Math.ceil(remaining / (1000 * 60));
         return reply({
             embeds: [
-                EmbedUI.createMessage({
-                    color: 'red',
+                embed.red({
                     title: '⏳ Travail déjà effectué',
                     description: `Vous devez attendre encore **${minutesLeft} min** avant de retravailler`,
                 }),
@@ -76,8 +75,7 @@ const handleWorkCommand = async ({
 
     return reply({
         embeds: [
-            EmbedUI.createMessage({
-                color: 'green',
+            embed.green({
                 title: `💼 Travail de ${username}`,
                 description: phrase + (phraseBonus ? `\n${phraseBonus}` : ''),
             }),

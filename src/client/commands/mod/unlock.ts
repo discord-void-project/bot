@@ -1,7 +1,7 @@
 import { Command } from '@/structures'
 import { MessageFlags } from 'discord.js'
 
-import { EmbedUI } from '@/ui/EmbedUI'
+import embed from '@/ui/embed'
 import { mainGuildConfig } from '@/client/config/mainGuild'
 
 export default new Command({
@@ -21,14 +21,14 @@ export default new Command({
             return await interaction.reply({
                 flags: MessageFlags.Ephemeral,
                 embeds: [
-                    EmbedUI.createMessage(`L'unlockage ne prends pas encore en compte les salons textuel :c`, { color: 'red' })
+                    embed.red(`L'unlockage ne prends pas encore en compte les salons textuel :c`)
                 ]
             })
         };
 
         const msg = await interaction.reply({
             embeds: [
-                EmbedUI.createMessage(`Unlocking en cours..`, { color: 'orange' })
+                embed.orange(`Unlocking en cours..`)
             ]
         });
 
@@ -39,7 +39,7 @@ export default new Command({
         if (members.length < 1) {
             return await msg.edit({
                 embeds: [
-                    EmbedUI.createMessage(`Aucune personne a démuté 👌`, { color: 'red' })
+                    embed.red(`Aucune personne a démuté 👌`)
                 ]
             });
         }
@@ -56,7 +56,7 @@ export default new Command({
 
         return await msg.edit({
             embeds: [
-                EmbedUI.createMessage(`**${members.length}** personnes ont été demuté`, { color: 'green' })
+                embed.green(`**${members.length}** personnes ont été demuté`)
             ]
         });
     }

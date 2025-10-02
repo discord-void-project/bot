@@ -4,8 +4,8 @@ import { GuildMember, MessageFlags } from 'discord.js'
 import { shopItemService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 
-import { EmbedUI } from '@/ui/EmbedUI'
-import { createActionRow, createButton } from '@/ui/components/common'
+import embed from '@/ui/embed'
+import { actionRow, button } from '@/ui/components'
 
 export default new Command({
     description: 'unequip a role color',
@@ -30,16 +30,13 @@ export default new Command({
 
         if (!roles.length) {
             return await interaction.reply({
-                embeds: [
-                    EmbedUI.createMessage(`Vous n'avez aucun rôle payant d'équipé !`, { color: 'red' })
-                ]
+                embeds: [embed.red(`Vous n'avez aucun rôle payant d'équipé !`)]
             });
         }
 
         const msg = await interaction.reply({
             embeds: [
-                EmbedUI.createMessage({
-                    color: 'orange',
+                embed.orange({
                     description: [
                         `Voulez-vous vraiment déséquipé votre rôle couleur ?`,
                         '-# Remarque : une fois le rôle supprimé vous ne serez pas **remboursé**'
@@ -47,9 +44,9 @@ export default new Command({
                 })
             ],
             components: [
-                createActionRow([
-                    createButton('Confirmer', { color: 'green', customId: '#confirm' }),
-                    createButton('Annuler', { color: 'red', customId: '#cancel' })
+                actionRow([
+                    button.green('Confirmer', { custom_id: '#confirm' }),
+                    button.red('Annuler', { custom_id: '#cancel' })
                 ])
             ],
             flags: MessageFlags.Ephemeral
@@ -67,22 +64,16 @@ export default new Command({
                 }
 
                 return await res.reply({
-                    embeds: [
-                        EmbedUI.createMessage(`Le rôle couleur vous a bien été déséquipé !`, { color: 'green' })
-                    ]
+                    embeds: [embed.green(`Le rôle couleur vous a bien été déséquipé !`)]
                 });
             }
 
             return await res.reply({
-                embeds: [
-                    EmbedUI.createMessage(`Opération annnuler !`, { color: 'green' })
-                ]
+                embeds: [embed.green(`Opération annnuler !`)]
             });
         } catch {
             return await msg.edit({
-                embeds: [
-                    EmbedUI.createMessage(`Une erreur est survenu`, { color: 'red' })
-                ]
+                embeds: [embed.red(`Une erreur est survenu`)]
             })
         }
     }

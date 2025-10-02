@@ -3,8 +3,8 @@ import { Command } from '@/structures/Command'
 import prisma from '@/database/prisma'
 import { guildService } from '@/database/services'
 
-import { createActionRow, createButton } from '@/ui/components/common'
-import { EmbedUI } from '@/ui/EmbedUI'
+import { actionRow, button } from '@/ui/components'
+import embed from '@/ui/embed'
 
 import { parseUserMention } from '@/utils'
 
@@ -36,8 +36,7 @@ export default new Command({
         if (!userDatabase && !banInfo) {
             return await message.reply({
                 embeds: [
-                    EmbedUI.createMessage({
-                        color: 'green',
+                    embed.green({
                         title: "✅ Rapport d'autorité",
                         description: `L'utilisateur <@${userId}> \`(${userId})\` est **en règle** dans ce serveur.`
                     })
@@ -52,20 +51,19 @@ export default new Command({
 
             const derogationButton = () => {
                 return guildBlacklist?.accepted
-                    ? createButton('Retirer autorisation', { color: 'red', customId: 'unallow' })
-                    : createButton('Autoriser', { color: 'green', customId: 'allow' });
+                    ? button.red('Retirer autorisation', { custom_id: 'unallow' })
+                    : button.green('Autoriser', { custom_id: 'allow' });
             }
 
             if (userDatabase?.status === 'ACCEPTED') {
                 components.push(
-                    createActionRow([ derogationButton() ])
+                    actionRow([ derogationButton() ])
                 );
             }
 
             return {
                 embeds: [
-                    EmbedUI.createMessage({
-                        color: 'purple',
+                    embed.indigo({
                         title: "📋 Rapport d'autorité",
                         fields: [
                             {

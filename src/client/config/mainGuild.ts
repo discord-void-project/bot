@@ -1,6 +1,5 @@
 import { CustomClientMainGuildData } from '@/structures/CustomClient'
 
-/** @deprecated */
 export const mainGuildConfig: CustomClientMainGuildData = {
     id: '1280087771540623413',
     reportChannelId: '1420908786402725979',

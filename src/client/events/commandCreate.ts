@@ -10,7 +10,7 @@ import { Event } from '@/structures'
 import prisma from '@/database/prisma'
 import { UserFlags } from '@/database/utils/UserFlags'
 
-import { EmbedUI } from '@/ui/EmbedUI'
+import embed from '@/ui/embed'
 
 const replyBy = async (interaction: Message | ChatInputCommandInteraction, payload: BaseMessageOptions) => {
     if (interaction instanceof ChatInputCommandInteraction) {
@@ -30,8 +30,7 @@ export default new Event({
 
             return await replyBy(interaction, {
                 embeds: [
-                    EmbedUI.createMessage({
-                        color: 'red',
+                    embed.red({
                         title: `// ${title ?? "Authorization refusée"}`,
                         description: content.join('\n'),
                     })

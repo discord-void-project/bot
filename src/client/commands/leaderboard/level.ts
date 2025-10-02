@@ -3,7 +3,7 @@ import { Guild } from 'discord.js'
 
 import prisma from '@/database/prisma'
 import { mainGuildConfig } from '@/client/config/mainGuild'
-import { EmbedUI } from '@/ui/EmbedUI'
+import embed from '@/ui/embed'
 
 interface HandleLeaderboardContext {
     interactUserId: string;
@@ -23,9 +23,7 @@ const handleLevelLeaderboard = async ({
 
     if (!allMembers.length) {
         return reply({
-            embeds: [
-                EmbedUI.createMessage('Aucune donnée de niveaux', { color: 'orange' })
-            ]
+            embeds: [embed.orange('Aucune donnée de niveaux')]
         });
     }
 
@@ -65,8 +63,7 @@ const handleLevelLeaderboard = async ({
 
     return reply({
         embeds: [
-            EmbedUI.createMessage({
-                color: 'orange',
+            embed.orange({
                 title: '📊 Classement par niveau',
                 description: [
                     `🧠 Niveaux cumulés sur le serveur : **${totalLevels.toLocaleString('fr-FR')}**\n`,
