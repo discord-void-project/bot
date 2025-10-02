@@ -4,11 +4,11 @@ import { ButtonInteraction, GuildMember, MessageFlags } from 'discord.js'
 import { memberService, shopItemService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 
-import { actionRow, button, selectMenu, separator, textDisplay } from '@/ui/components'
-import useEmojis from '@/ui/useEmojis'
+import { createActionRow, createButton, createSeparator, createStringSelectMenu, createTextDisplay } from '@/ui/components/common'
 import { ContainerUI } from '@/ui/ContainerUI'
 import { EmbedUI } from '@/ui/EmbedUI'
 
+import { applicationEmojiHelper } from '@/helpers'
 import { formatCompactNumber } from '@/utils'
 
 export default new Command({
@@ -29,7 +29,7 @@ export default new Command({
     async onInteraction(interaction) {
         const member = interaction.member as GuildMember
 
-        const { yellowArrowEmoji } = useEmojis();
+        const { yellowArrowEmoji } = applicationEmojiHelper();
 
         const allItems = await shopItemService.findMany(interaction.guild!.id);
 
@@ -85,28 +85,28 @@ export default new Command({
                 ContainerUI.create({
                     color: 'orange',
                     components: [
-                        textDisplay(`## Boutique de ${interaction.guild!.name}`),
-                        (maxPages - 1) > 0 && textDisplay(`-# Page ${page + 1} / ${maxPages}`),
-                        textDisplay(`-# Mon solde total **${total}** 💰`),
-                        separator(),
+                        createTextDisplay(`## Boutique de ${interaction.guild!.name}`),
+                        (maxPages - 1) > 0 && createTextDisplay(`-# Page ${page + 1} / ${maxPages}`),
+                        createTextDisplay(`-# Mon solde total **${total}** 💰`),
+                        createSeparator(),
                         ...items.map((item) => {
                             const isStockEpuised = typeof item.stock === 'number' && item.stock <= 0;
 
-                            return textDisplay([
+                            return createTextDisplay([
                                 `- **${isStockEpuised ? `~~<@&${item.roleId}>~~` : `<@&${item.roleId}>`}**`,
                                 typeof item.stock === 'number' && `**↳** 📦 Stock  ${yellowArrowEmoji} **${isStockEpuised ? 'Épuisé' : item.stock}**`,
                                 `**↳** 🏷️ Prix ${yellowArrowEmoji} **${formatCompactNumber(item.cost)}**`,
                             ].filter(Boolean).join('\n'));
                         }),
-                        separator(),
-                        actionRow([
-                            selectMenu.string({
-                                custom_id: 'selectItem',
+                        createSeparator(),
+                        createActionRow([
+                            createStringSelectMenu({
+                                customId: 'selectItem',
                                 placeholder: 'Choisissez un article à acheter',
                                 options: optionsItem
                             })
                         ]) as any,
-                        ((page > 0) || ((maxPages - 1) > page)) && actionRow([
+                        ((page > 0) || ((maxPages - 1) > page)) && createActionRow([
                             page > 0 && {
                                 type: 2,
                                 style: 2,
@@ -203,16 +203,17 @@ export default new Command({
                     });
                 }
 
+
                 const msg = await i.update({
                     components: [
                         ContainerUI.create({
                             color: 'orange',
                             components: [
-                                textDisplay(`Confirmer vous l'achat de l'article " <@&${item?.roleId}> " ?`),
-                                separator(),
-                                actionRow([
-                                    button.green('Confirmer', { custom_id: '#confirm' }),
-                                    button.red('Annuler', { custom_id: '#cancel' }),
+                                createTextDisplay(`Confirmer vous l'achat de l'article " <@&${item?.roleId}> " ?`),
+                                createSeparator(),
+                                createActionRow([
+                                    createButton('Confirmer', { color: 'green', customId: '#confirm' }),
+                                    createButton('Annuler', { color: 'red', customId: '#cancel' }),
                                 ])
                             ]
                         })

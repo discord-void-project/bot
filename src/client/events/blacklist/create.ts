@@ -1,6 +1,6 @@
 import { Event } from '@/structures'
 
-import { actionRow, button } from '@/ui/components'
+import { createActionRow, createButton } from '@/ui/components/common'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 export default new Event({
@@ -36,12 +36,14 @@ export default new Event({
                 })
             ],
             components: [
-                actionRow([
-                    button.green('Accepter', {
-                        custom_id: `accept_${blacklist.userId}`
+                createActionRow([
+                    createButton('Accepter', {
+                        color: 'green',
+                        customId: `accept_${blacklist.userId}`
                     }),
-                    button.red('Refuser', {
-                        custom_id: `refuse_${blacklist.userId}`
+                    createButton('Refuser', {
+                        color: 'red',
+                        customId: `refuse_${blacklist.userId}`
                     })
                 ])
             ]

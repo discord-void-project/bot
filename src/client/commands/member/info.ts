@@ -7,15 +7,14 @@ import { UserFlags } from '@/database/utils'
 
 import { mainGuildConfig } from '@/client/config/mainGuild'
 
-import useEmojis from '@/ui/useEmojis'
 import { ContainerUI } from '@/ui/ContainerUI'
-import { section, textDisplay, thumbnail } from '@/ui/components'
+import { createSection, createTextDisplay, createThumbnail } from '@/ui/components/common'
 
 import { formatCompactNumber } from '@/utils'
 import { getXpProgress } from '@/utils/math'
 import { getDominantColor } from '@/utils/image'
 
-import { guildMemberHelper } from '@/helpers'
+import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
 
 export default new Command({
     nameLocalizations: {
@@ -48,14 +47,14 @@ export default new Command({
         }
     },
     async onInteraction(interaction) {
-        const { whiteArrowEmoji } = useEmojis();
+        const { whiteArrowEmoji } = applicationEmojiHelper();
 
         const member = (interaction.options.getMember('user') ?? interaction.member) as GuildMember;
         const isBot = member.user.bot;
 
         const memberHelper = await guildMemberHelper(member, { fetchUser: true });
         const memberAvatar = memberHelper.getAvatarURL({ forceStatic: true });
-        const memberBanner = memberHelper.getBannerURL({ size: 512 });
+        const memberBanner = memberHelper.getBannerURL({ size: 1024 });
 
         const createdAt = Math.floor(member.user.createdTimestamp / 1000);
         const joinedAt = Math.floor(member.joinedTimestamp! / 1000);
@@ -131,11 +130,13 @@ export default new Command({
             memberTitle = 'Robot Discord';
         }
 
-        const profileSection = section({
-            accessory: thumbnail(memberAvatar),
+        const profileSection = createSection({
+            accessory: createThumbnail({
+                url: memberAvatar
+            }),
             components: [
-                textDisplay(`## ${pseudo || username}${pseudo ? ` \`(${username})\`` : ''}`),
-                textDisplay([
+                createTextDisplay(`## ${pseudo || username}${pseudo ? ` \`(${username})\`` : ''}`),
+                createTextDisplay([
                     memberTitle && `-# *${memberTitle}*\n`,
                     `**Identifiant**\n- **\`${member.id}\`**`,
                     (userDatabase?.tagAssignedAt && hasGuildTag) && `**Porte le tag du serveur depuis**\n- <t:${userTagAssignedAt}>\n- <t:${userTagAssignedAt}:R>`,
@@ -180,17 +181,17 @@ export default new Command({
             }
 
             components.push(...[
-                isProgressionEnabled && textDisplay([
+                isProgressionEnabled && createTextDisplay([
                     '**Progression**',
                     `⚡ ${whiteArrowEmoji} Nv. **${userRecord.level}**${isLevelMax ? ' \`(MAX)\`' : ''}`,
                     !isLevelMax && `🧪 ${whiteArrowEmoji} **${formatCompactNumber(current)}** / **${formatCompactNumber(required)}**`
                 ].filter(Boolean).join('\n')),
-                isEcoEnabled && textDisplay([
+                isEcoEnabled && createTextDisplay([
                     '**Fonds**',
                     `🏦 ${whiteArrowEmoji} **${formatCompactNumber(userRecord.bank)}** / **${formatCompactNumber(50000)}** en banque`,
                     `💶 ${whiteArrowEmoji} **${formatCompactNumber(userRecord.coins)}** en poche`
                 ].join('\n')),
-                textDisplay([
+                createTextDisplay([
                     '**States**',
                     `💬 ${whiteArrowEmoji} ${userRecord.messageCount ? `**${formatCompactNumber(userRecord.messageCount)}** messages envoyés` : "Jamais écris"}`,
                     `🔊 ${whiteArrowEmoji} ${userRecord.voiceTotalMinutes ? `${formatTime(userRecord.voiceTotalMinutes)} en vocal` : 'Jamais parlé'}`

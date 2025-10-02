@@ -5,7 +5,7 @@ import { shopItemService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 
 import { EmbedUI } from '@/ui/EmbedUI'
-import { actionRow, button } from '@/ui/components'
+import { createActionRow, createButton } from '@/ui/components/common'
 
 export default new Command({
     description: 'unequip a role color',
@@ -47,9 +47,9 @@ export default new Command({
                 })
             ],
             components: [
-                actionRow([
-                    button.green('Confirmer', { custom_id: '#confirm' }),
-                    button.red('Annuler', { custom_id: '#cancel' })
+                createActionRow([
+                    createButton('Confirmer', { color: 'green', customId: '#confirm' }),
+                    createButton('Annuler', { color: 'red', customId: '#cancel' })
                 ])
             ],
             flags: MessageFlags.Ephemeral

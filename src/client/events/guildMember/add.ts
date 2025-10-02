@@ -1,7 +1,7 @@
 import { Event } from '@/structures'
 import { guildService } from '@/database/services'
 
-import { actionRow, button } from '@/ui/components'
+import { createActionRow, createButton } from '@/ui/components/common'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 export default new Event({
@@ -42,8 +42,11 @@ export default new Event({
                             })
                         ],
                         components: [
-                            actionRow([
-                                button.green('Autoriser', { custom_id: `bl_authorize_${member.id}` }),
+                            createActionRow([
+                                createButton('Autoriser', {
+                                    color: 'green',
+                                    customId: `bl_authorize_${member.id}`
+                                }),
                             ])
                         ]
                     })

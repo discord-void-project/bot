@@ -3,7 +3,7 @@ import { Command } from '@/structures/Command'
 import { userService } from '@/database/services'
 import { UserFlags, UserFlagsString } from '@/database/utils'
 
-import { actionRow, button } from '@/ui/components'
+import { createActionRow, createButton } from '@/ui/components/common'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 import { parseUserMention } from '@/utils'
@@ -79,8 +79,8 @@ export default new Command({
                 })
             ],
             components: [
-                actionRow([
-                    button.green('Prévenir en DM')
+                createActionRow([
+                    createButton('Prévenir en DM', { color: 'blue', customId: 'dm-user' })
                 ])
             ]
         });

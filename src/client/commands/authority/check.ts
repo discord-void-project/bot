@@ -3,7 +3,7 @@ import { Command } from '@/structures/Command'
 import prisma from '@/database/prisma'
 import { guildService } from '@/database/services'
 
-import { actionRow, button } from '@/ui/components'
+import { createActionRow, createButton } from '@/ui/components/common'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 import { parseUserMention } from '@/utils'
@@ -52,13 +52,13 @@ export default new Command({
 
             const derogationButton = () => {
                 return guildBlacklist?.accepted
-                    ? button.red('Retirer autorisation', { custom_id: 'unallow' })
-                    : button.green('Autoriser', { custom_id: 'allow' });
+                    ? createButton('Retirer autorisation', { color: 'red', customId: 'unallow' })
+                    : createButton('Autoriser', { color: 'green', customId: 'allow' });
             }
 
             if (userDatabase?.status === 'ACCEPTED') {
                 components.push(
-                    actionRow([ derogationButton() ])
+                    createActionRow([ derogationButton() ])
                 );
             }
 

@@ -13,7 +13,17 @@ export type ApplicationEmojiName = 'voiceChannel'
     | 'online'
     | 'idle'
     | 'dnd'
-    | 'fire';
+    | 'lightGraySubEntry'
+    | 'redSubEntry'
+    | 'greenSubEntry'
+    | 'lightGrayBullet'
+    | 'yellowSubEntry'
+    | 'graySubEntry'
+    | 'yellowBullet'
+    | 'redBullet'
+    | 'blueBullet'
+    | 'greenBullet'
+    | 'empty';
 
 export const applicationEmojiDev : Record<ApplicationEmojiName, string> = {
     voiceChannel: '1366513582199541800',
@@ -30,11 +40,23 @@ export const applicationEmojiDev : Record<ApplicationEmojiName, string> = {
     whiteArrow: '1373466902801809478',
     pinkArrow: '1373466950726062141',
 
+    graySubEntry: '1412969509047894137',
+    yellowSubEntry: '1412969535136468992',
+    lightGraySubEntry: '1412972355080290334',
+    redSubEntry: '1412972290240544868',
+    greenSubEntry: '1412972394016018432',
+
+    blueBullet: '1418433617238950038',
+    greenBullet: '1412969556682739926',
+    yellowBullet: '1412969569076904046',
+    lightGrayBullet: '1412972142584135771',
+    redBullet: '1412972111928103024',
+
+    empty: '1412970747907014656',
+
     online: '1366512708853174343',
     idle: '1366512718399537232',
     dnd: '1366512728239509504',
-
-    fire: '1367567880987873480'
 }
 
 export const applicationEmojiProd: Record<ApplicationEmojiName, string>  = {
@@ -52,11 +74,23 @@ export const applicationEmojiProd: Record<ApplicationEmojiName, string>  = {
     whiteArrow: '1385819618735816824',
     pinkArrow: '1385819789209112618',
 
+    graySubEntry: '1423306275915300864',
+    yellowSubEntry: '1423306341190996030',
+    lightGraySubEntry: '1423306399026516018',
+    redSubEntry: '1423306471822725152',
+    greenSubEntry: '1423306524117434408',
+
+    blueBullet: '1423305990958223482',
+    greenBullet: '1423306041751371916',
+    yellowBullet: '1423306085636374530',
+    lightGrayBullet: '1423306128816738365',
+    redBullet: '1423306178280296458',
+
+    empty: '1423305833587933307',
+
     online: '1342979602468962487',
     idle: '1342979785835544576',
     dnd: '1342979809713848412',
-
-    fire: '1385819506550771772'
 } as const
 
 export const currentApplicationEmoji = process.env.ENV === 'DEV'
