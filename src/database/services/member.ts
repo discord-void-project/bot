@@ -1,6 +1,20 @@
 import { Prisma } from '@prisma/client'
 import prisma from '@/database/prisma'
 
+const find = async (
+    userId: string,
+    guildId: string,
+) => {
+    return await prisma.member.findUnique({
+        where: {
+            userId_guildId: {
+                userId,
+                guildId
+            }
+        }
+    });
+}
+
 const findOrCreate = async (
     userId: string,
     guildId: string
@@ -129,6 +143,7 @@ const pay = async (
 };
 
 export const memberService = {
+    find,
     updateOrCreate,
     findOrCreate,
     remove,

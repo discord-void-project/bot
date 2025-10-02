@@ -23,6 +23,11 @@ export type ApplicationEmojiName = 'voiceChannel'
     | 'redBullet'
     | 'blueBullet'
     | 'greenBullet'
+    | 'whiteRect'
+    | 'greenRect'
+    | 'yellowRect'
+    | 'redRect'
+    | 'indogoRect'
     | 'empty';
 
 export const applicationEmojiDev : Record<ApplicationEmojiName, string> = {
@@ -51,6 +56,12 @@ export const applicationEmojiDev : Record<ApplicationEmojiName, string> = {
     yellowBullet: '1412969569076904046',
     lightGrayBullet: '1412972142584135771',
     redBullet: '1412972111928103024',
+
+    whiteRect: '1423334828551573588',
+    yellowRect: '1423335622499766432',
+    redRect: '1423335629172904220',
+    greenRect: '1423334822482546801',
+    indogoRect: '1423335752284115155',
 
     empty: '1412970747907014656',
 
@@ -85,6 +96,12 @@ export const applicationEmojiProd: Record<ApplicationEmojiName, string>  = {
     yellowBullet: '1423306085636374530',
     lightGrayBullet: '1423306128816738365',
     redBullet: '1423306178280296458',
+
+    whiteRect: '1423361609933525103',
+    yellowRect: '1423361596138192977',
+    redRect: '1423361587154260238',
+    greenRect: '1423361602073264341',
+    indogoRect: '1423361570502738071',
 
     empty: '1423305833587933307',
 

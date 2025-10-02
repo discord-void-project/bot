@@ -1,8 +1,9 @@
 import { GuildMember, ImageURLOptions } from 'discord.js'
 
 export interface GuildMemberHelperOptions {
-    fetchMember?: boolean
-    fetchUser?: boolean
+    fetchMember?: boolean;
+    fetchUser?: boolean;
+    fetchAll?: boolean;
 }
 
 export interface GuildMemberHelperGetNameOptions {
@@ -12,11 +13,11 @@ export interface GuildMemberHelperGetNameOptions {
 }
 
 export const guildMemberHelper = async (member: GuildMember, options?: GuildMemberHelperOptions) => {
-    if (options?.fetchMember) {
+    if (options?.fetchAll || options?.fetchMember) {
         member = await member.fetch();
     }
 
-    if (options?.fetchUser) {
+    if (options?.fetchAll || options?.fetchUser) {
         await member.user.fetch();
     }
 
@@ -28,12 +29,16 @@ export const guildMemberHelper = async (member: GuildMember, options?: GuildMemb
             const globalName = options?.globalName ?? true
             const username = options?.username ?? true
 
-            if (nickname) {
-                name = member.nickname
-            } else if (globalName) {
-                name = member.user.globalName
-            } else if (username) {
+            if (username && member.user.username) {
                 name = member.user.username
+            }
+
+            if (globalName && member.user.globalName) {
+                name = member.user.globalName
+            }
+
+            if (nickname && member.nickname) {
+                name = member.nickname
             }
 
             return name;

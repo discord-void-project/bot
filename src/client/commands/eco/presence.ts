@@ -55,7 +55,7 @@ const handleCommand = async ({
 
     await memberService.updateOrCreate(userId, guildId, {
         update: {
-            bank: { increment: reward },
+            coins: { increment: reward },
             lastDailyAt: new Date()
         },
     });
