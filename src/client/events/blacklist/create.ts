@@ -1,7 +1,7 @@
 import { Event } from '@/structures'
 
-import { actionRow, button } from '@/ui/components'
-import embed from '@/ui/embed'
+import { createActionRow, createButton } from '@/ui/components/common'
+import { EmbedUI } from '@/ui/EmbedUI'
 
 export default new Event({
     name: 'blacklistCreate',
@@ -12,7 +12,8 @@ export default new Event({
         return await reportChannel.send({
             content: "Hey ! Je vous transmet cette demande pour ajouter quelqu'un sur blacklist ;)",
             embeds: [
-                embed.orange({
+                EmbedUI.createMessage({
+                    color: 'orange',
                     title: "🕵️ Nouvelle demande de Blacklist",
                     fields: [
                         {
@@ -35,12 +36,14 @@ export default new Event({
                 })
             ],
             components: [
-                actionRow([
-                    button.green('Accepter', {
-                        custom_id: `accept_${blacklist.userId}`
+                createActionRow([
+                    createButton('Accepter', {
+                        color: 'green',
+                        customId: `accept_${blacklist.userId}`
                     }),
-                    button.red('Refuser', {
-                        custom_id: `refuse_${blacklist.userId}`
+                    createButton('Refuser', {
+                        color: 'red',
+                        customId: `refuse_${blacklist.userId}`
                     })
                 ])
             ]
