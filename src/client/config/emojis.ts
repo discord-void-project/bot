@@ -97,6 +97,12 @@ export const applicationEmojiProd: Record<ApplicationEmojiName, string>  = {
     lightGrayBullet: '1423306128816738365',
     redBullet: '1423306178280296458',
 
+    whiteRect: '1423361609933525103',
+    yellowRect: '1423361596138192977',
+    redRect: '1423361587154260238',
+    greenRect: '1423361602073264341',
+    indogoRect: '1423361570502738071',
+
     empty: '1423305833587933307',
 
     online: '1342979602468962487',
