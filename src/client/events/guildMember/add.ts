@@ -1,8 +1,8 @@
 import { Event } from '@/structures'
 import { guildService } from '@/database/services'
 
-import { createActionRow, createButton } from '@/ui/components/common'
-import { EmbedUI } from '@/ui/EmbedUI'
+import { actionRow, button } from '@/ui/components'
+import embed from '@/ui/embed'
 
 export default new Event({
     name: 'guildMemberAdd',
@@ -23,8 +23,7 @@ export default new Event({
                     return await guild.safetyAlertsChannel.send({
                         content: `Oulah, il y a un membre qui a tenté de rejoindre mais il est sur mes listes noir du coup je l'ai banni, veux-tu que je l'autorise quand-même ?`,
                         embeds: [
-                            EmbedUI.createMessage({
-                                color: 'orange',
+                            embed.orange({
                                 title: '🕵️ info sur le membre blacklisté',
                                 fields: [
                                     {
@@ -42,11 +41,8 @@ export default new Event({
                             })
                         ],
                         components: [
-                            createActionRow([
-                                createButton('Autoriser', {
-                                    color: 'green',
-                                    customId: `bl_authorize_${member.id}`
-                                }),
+                            actionRow([
+                                button.green('Autoriser', { custom_id: `bl_authorize_${member.id}` }),
                             ])
                         ]
                     })
@@ -57,8 +53,7 @@ export default new Event({
         if (this.client.mainGuild.id === guild.id) {
             await this.client.mainGuild.welcomeChannel.send({
                 embeds: [
-                    EmbedUI.createMessage({
-                        color: 'indigo',
+                    embed.indigo({
                         title: '˗ˏˋ ★ ˎˊ˗ Nouvelle invocation  ˗ˏˋ ★ ˎˊ˗',
                         description: [
                             `· · ─ ·✦· ─ · ·`,

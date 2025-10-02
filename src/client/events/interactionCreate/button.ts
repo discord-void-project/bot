@@ -3,7 +3,7 @@ import { Event } from '@/structures'
 import { BlacklistStatus } from '@prisma/client'
 import { guildService } from '@/database/services'
 
-import { EmbedUI } from '@/ui/EmbedUI'
+import embed from '@/ui/embed'
 
 export default new Event({
     name: 'buttonInteractionCreate',
@@ -16,8 +16,7 @@ export default new Event({
                 return await interaction.message.edit({
                     content: null,
                     embeds: [
-                        EmbedUI.createMessage({
-                            color: 'gray',
+                        embed.gray({
                             title: `Signalement introuvable`,
                             description: 'Bizarre, je ne trouve pas le signalement..',
                             timestamp: new Date().toISOString(),
@@ -34,13 +33,12 @@ export default new Event({
             return await interaction.message.edit({
                 content: "Eh hop, c'est validé ! J'envoie un message aux autres serveurs :)",
                 embeds: [
-                    EmbedUI.createMessage({
-                        ...interaction.message.embeds[0],
-                        color: 'green',
+                    embed.green({
+                        ...interaction.message.embeds[0].toJSON(),
                         timestamp: new Date().toISOString(),
                         title: '✅ Blacklist validée',
                         footer: {
-                            iconURL: interaction.user.avatarURL() ?? interaction.user.defaultAvatarURL,
+                            icon_url: interaction.user.avatarURL() ?? undefined,
                             text: `Traité par ${interaction.user.username}`
                         }
                     })
@@ -55,8 +53,7 @@ export default new Event({
                 return await interaction.message.edit({
                     content: null,
                     embeds: [
-                        EmbedUI.createMessage({
-                            color: 'gray',
+                        embed.gray({
                             title: `Signalement introuvable`,
                             description: 'Impossible de refuser, le signalement est introuvable.. :/',
                             timestamp: new Date().toISOString(),
@@ -71,13 +68,12 @@ export default new Event({
             return await interaction.message.edit({
                 content: "Okaay ça marche, j'annule la blacklist",
                 embeds: [
-                    EmbedUI.createMessage({
-                        ...interaction.message.embeds[0],
-                        color: 'red',
+                    embed.red({
+                        ...interaction.message.embeds[0].toJSON(),
                         timestamp: new Date().toISOString(),
                         title: '❌ Blacklist refusée',
                         footer: {
-                            iconURL: interaction.user.avatarURL() ?? interaction.user.defaultAvatarURL,
+                            icon_url: interaction.user.avatarURL() ?? undefined,
                             text: `Traité par ${interaction.user.username}`
                         }
                     })
@@ -93,13 +89,12 @@ export default new Event({
             return await interaction.message.edit({
                 content: "J'ai autorisé l'utilisateur a rejoindre, je la bannerai plus :)",
                 embeds: [
-                    EmbedUI.createMessage({
-                        ...interaction.message.embeds[0],
-                        color: 'gray',
+                    embed.green({
+                        ...interaction.message.embeds[0].toJSON(),
                         timestamp: new Date().toISOString(),
                         title: '✅ Dérogation de blacklist validé',
                         footer: {
-                            iconURL: interaction.user.avatarURL() ?? interaction.user.defaultAvatarURL,
+                            icon_url: interaction.user.avatarURL() ?? undefined,
                             text: `Traité par ${interaction.user.username}`
                         }
                     })

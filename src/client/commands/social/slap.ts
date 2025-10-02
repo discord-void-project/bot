@@ -3,7 +3,7 @@ import { ApplicationCommandOptionType } from 'discord.js'
 
 import { mainGuildConfig } from '@/client/config'
 import { waifuAPI } from '@/api'
-import { EmbedUI } from '@/ui/EmbedUI'
+import embed from '@/ui/embed'
 
 export default new Command({
     description: '👊 slap someone',
@@ -45,8 +45,7 @@ export default new Command({
         return await interaction.reply({
             content: hasUser ? sentence : undefined,
             embeds: [
-                EmbedUI.createMessage({
-                    color: 'purple',
+                embed.purple({
                     description: hasUser ? undefined : sentence,
                     image: {
                         url: await waifuAPI('slap')

@@ -1,5 +1,5 @@
 import { Event } from '@/structures'
-import { EmbedUI } from '@/ui/EmbedUI'
+import embed from '@/ui/embed'
 
 export default new Event({
     name: 'messageUpdate',
@@ -15,26 +15,23 @@ export default new Event({
 
         const logChannel = this.client.mainGuild.updateLogChannel;
         if (!logChannel) return;
-
+        
         return await logChannel.send({
-            embeds: [
-                EmbedUI.createMessage({
-                    color: 'orange',
-                    author: {
-                        name: newMessage.author!.username,
-                        iconURL: newMessage.author?.displayAvatarURL()
-                    },
-                    description: `✏️ **Message modifié dans <#${newMessage.channel.id}>**`,
-                    fields: [
-                        { name: 'Avant', value: oldMessage.content.slice(0, 1024) },
-                        { name: 'Après', value: newMessage.content.slice(0, 1024) }
-                    ],
-                    footer: {
-                        text: `UID: ${newMessage.author!.id}`
-                    },
-                    timestamp: new Date().toISOString()
-                })
-            ]
+            embeds: [embed.orange({
+                author: {
+                    name: newMessage.author!.username,
+                    icon_url: newMessage.author?.displayAvatarURL()
+                },
+                description: `✏️ **Message modifié dans <#${newMessage.channel.id}>**`,
+                fields: [
+                    { name: 'Avant', value: oldMessage.content.slice(0, 1024) },
+                    { name: 'Après', value: newMessage.content.slice(0, 1024) }
+                ],
+                footer: {
+                    text: `UID: ${newMessage.author!.id}`
+                },
+                timestamp: new Date().toISOString()
+            })]
         });
     }
 })

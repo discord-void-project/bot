@@ -3,7 +3,7 @@ import { Guild } from 'discord.js'
 
 import prisma from '@/database/prisma'
 import { mainGuildConfig } from '@/client/config/mainGuild'
-import { EmbedUI } from '@/ui/EmbedUI'
+import embed from '@/ui/embed'
 
 interface HandleLeaderboardContext {
     interactUserId: string;
@@ -23,9 +23,7 @@ const handleVoiceLeaderboard = async ({
 
     if (!allMembers.length) {
         return reply({
-            embeds: [
-                EmbedUI.createMessage('Aucune donnée de vocal', { color: 'orange' })
-            ]
+            embeds: [embed.orange('Aucune donnée de vocal')]
         });
     }
 
@@ -69,8 +67,7 @@ const handleVoiceLeaderboard = async ({
 
     return reply({
         embeds: [
-            EmbedUI.createMessage({
-                color: 'orange',
+            embed.orange({
                 title: '🔊 Classement des plus actifs en vocal',
                 description: [
                     `🕒 Temps cumulé sur le serveur : **${totalHours.toLocaleString('fr-FR')}h**\n`,

@@ -1,4 +1,4 @@
-import { SymbolsUI } from '@/ui/SymbolsUI'
+import { SymbolsUI } from '@/ui/symbols'
 import c from 'ansi-colors'
 
 export type LoggerTextInput = string | ((color: typeof c) => string | undefined);

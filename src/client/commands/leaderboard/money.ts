@@ -3,7 +3,7 @@ import { Guild } from 'discord.js'
 
 import prisma from '@/database/prisma'
 import { mainGuildConfig } from '@/client/config/mainGuild'
-import { EmbedUI } from '@/ui/EmbedUI'
+import embed from '@/ui/embed'
 import { formatCompactNumber } from '@/utils'
 
 interface HandleLeaderboardContext {
@@ -24,9 +24,7 @@ const handleLeaderboardCommand = async ({
 
     if (!allMembers.length) {
         return reply({
-            embeds: [
-                EmbedUI.createMessage('Aucune données', { color: 'yellow' })
-            ]
+            embeds: [embed.orange('Aucune données')]
         });
     }
 
@@ -68,8 +66,7 @@ const handleLeaderboardCommand = async ({
 
     return reply({
         embeds: [
-            EmbedUI.createMessage({
-                color: 'orange',
+            embed.orange({
                 title: '🏆 Classement des plus riches',
                 description: [
                     `💸 Argent cumulé sur le serveur: **${formatCompactNumber(totalEconomy)}**\n`,

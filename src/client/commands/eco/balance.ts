@@ -3,7 +3,7 @@ import { Command } from '@/structures/Command'
 import { memberService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 import { formatCompactNumber } from '@/utils'
-import { EmbedUI } from '@/ui/EmbedUI'
+import embed from '@/ui/embed'
 
 interface HandleWalletContext {
     userId: string;
@@ -22,8 +22,7 @@ const handleWalletCommand = async ({
 
     return reply({
         embeds: [
-            EmbedUI.createMessage({
-                color: 'green',
+            embed.green({
                 title: `Solde de ${username}`,
                 description: [
                     `🏦 **${formatCompactNumber(member.bank)}** en banque`,
