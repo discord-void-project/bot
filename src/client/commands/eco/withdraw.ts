@@ -3,7 +3,7 @@ import { Command } from '@/structures/Command'
 import { memberService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 
-import embed from '@/ui/embed'
+import { EmbedUI } from '@/ui/EmbedUI'
 
 interface HandleWithdrawContext {
     userId: string;
@@ -23,7 +23,9 @@ const handleWithdrawCommand = async ({
 
     if (member.bank < 1) {
         return await reply({
-            embeds: [embed.red(`❌ Vous n'avez rien à retirer de la banque !`)]
+            embeds: [
+                EmbedUI.createMessage(`❌ Vous n'avez rien à retirer de la banque !`, { color: 'red' })
+            ]
         });
     }
 
@@ -35,17 +37,22 @@ const handleWithdrawCommand = async ({
         amount = Math.min(member.bank, parseInt(amountInput));
         if (isNaN(amount) || amount <= 0) {
             return reply({
-                embeds: [embed.red(`❌ Montant invalide`)],
+                embeds: [
+                    EmbedUI.createMessage(`❌ Montant invalide`, { color: 'red' })
+                ],
             });
         }
     }
 
     if (member.bank < amount) {
         return reply({
-            embeds: [embed.red({
-                title: '❌ Fonds insuffisants',
-                description: `Tu n'as que **${member.bank}** pièces en banque.`,
-            })]
+            embeds: [
+                EmbedUI.createMessage({
+                    color: 'red',
+                    title: '❌ Fonds insuffisants',
+                    description: `Tu n'as que **${member.bank}** pièces en banque.`,
+                })
+            ]
         });
     }
 
@@ -58,7 +65,8 @@ const handleWithdrawCommand = async ({
 
     return reply({
         embeds: [
-            embed.green({
+            EmbedUI.createMessage({
+                color: 'green',
                 title: '🏧 Retrait effectué',
                 description: `Tu as retiré **${amount}** pièces de ta banque vers ton portefeuille !`,
             })
@@ -108,10 +116,13 @@ export default new Command({
     async onMessage(message, { args: [amountInput] }) {
         if (!amountInput) {
             return message.reply({
-                embeds: [embed.red({
-                    title: '❌ Utilisation incorrecte',
-                    description: `Exemple : \`${process.env.PREFIX}!withdraw 250\` ou \`${process.env.PREFIX}!withdraw all\``
-                })]
+                embeds: [
+                    EmbedUI.createMessage({
+                        color: 'red',
+                        title: '❌ Utilisation incorrecte',
+                        description: `Exemple : \`${process.env.PREFIX}!withdraw 250\` ou \`${process.env.PREFIX}!withdraw all\``
+                    })
+                ]
             });
         }
 

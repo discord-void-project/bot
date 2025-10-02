@@ -1,6 +1,6 @@
 import { Event } from '@/structures'
 
-import embed from '@/ui/embed'
+import { EmbedUI } from '@/ui/EmbedUI'
 
 export default new Event({
     name: 'blacklistAccepted',
@@ -20,7 +20,8 @@ export default new Event({
                 allowedMentions: {},
                 content: "Heeya je vous partage la fiche d'un nouveau membre qui vient d'être blacklisté et qui se trouve sur le serveur",
                 embeds: [
-                    embed.orange({
+                    EmbedUI.createMessage({
+                        color: 'orange',
                         title: "🕵️ Information sur l'utilisateur",
                         fields: [
                             {

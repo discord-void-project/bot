@@ -1,26 +1,31 @@
-const configEmojisProd = {
-    voiceChannel: '1342655444484886650',
-    stageChannel: '1342655729055826041',
-    textChannel: '1342655488348655626',
-    categoryChannel: '1342655898392334377',
+export type ApplicationEmojiName = 'voiceChannel'
+    | 'stageChannel'
+    | 'textChannel'
+    | 'categoryChannel'
+    | 'redArrow'
+    | 'greenArrow'
+    | 'yellowArrow'
+    | 'purpleArrow'
+    | 'blueArrow'
+    | 'cyanArrow'
+    | 'whiteArrow'
+    | 'pinkArrow'
+    | 'online'
+    | 'idle'
+    | 'dnd'
+    | 'lightGraySubEntry'
+    | 'redSubEntry'
+    | 'greenSubEntry'
+    | 'lightGrayBullet'
+    | 'yellowSubEntry'
+    | 'graySubEntry'
+    | 'yellowBullet'
+    | 'redBullet'
+    | 'blueBullet'
+    | 'greenBullet'
+    | 'empty';
 
-    redArrow: '1342980251784970361',
-    greenArrow: '1343069739978850447',
-    yellowArrow: '1342980278804545670',
-    purpleArrow: '1342980220394672221',
-    blueArrow: '1385819721605316730',
-    cyanArrow: '1385819670896050317',
-    whiteArrow: '1385819618735816824',
-    pinkArrow: '1385819789209112618',
-
-    online: '1342979602468962487',
-    idle: '1342979785835544576',
-    dnd: '1342979809713848412',
-
-    fire: '1385819506550771772'
-} satisfies Record<string, string>
-
-const configEmojisDev = {
+export const applicationEmojiDev : Record<ApplicationEmojiName, string> = {
     voiceChannel: '1366513582199541800',
     stageChannel: '1366513562784366723',
     textChannel: '1366513550956167189',
@@ -35,15 +40,61 @@ const configEmojisDev = {
     whiteArrow: '1373466902801809478',
     pinkArrow: '1373466950726062141',
 
+    graySubEntry: '1412969509047894137',
+    yellowSubEntry: '1412969535136468992',
+    lightGraySubEntry: '1412972355080290334',
+    redSubEntry: '1412972290240544868',
+    greenSubEntry: '1412972394016018432',
+
+    blueBullet: '1418433617238950038',
+    greenBullet: '1412969556682739926',
+    yellowBullet: '1412969569076904046',
+    lightGrayBullet: '1412972142584135771',
+    redBullet: '1412972111928103024',
+
+    empty: '1412970747907014656',
+
     online: '1366512708853174343',
     idle: '1366512718399537232',
     dnd: '1366512728239509504',
+}
 
-    fire: '1367567880987873480'
-} satisfies Record<string, string>
+export const applicationEmojiProd: Record<ApplicationEmojiName, string>  = {
+    voiceChannel: '1342655444484886650',
+    stageChannel: '1342655729055826041',
+    textChannel: '1342655488348655626',
+    categoryChannel: '1342655898392334377',
 
-const configEmojis =  process.env.ENV === 'DEV'
-    ? configEmojisDev
-    : configEmojisProd;
+    redArrow: '1342980251784970361',
+    greenArrow: '1343069739978850447',
+    yellowArrow: '1342980278804545670',
+    purpleArrow: '1342980220394672221',
+    blueArrow: '1385819721605316730',
+    cyanArrow: '1385819670896050317',
+    whiteArrow: '1385819618735816824',
+    pinkArrow: '1385819789209112618',
 
-export default configEmojis;
+    graySubEntry: '1423306275915300864',
+    yellowSubEntry: '1423306341190996030',
+    lightGraySubEntry: '1423306399026516018',
+    redSubEntry: '1423306471822725152',
+    greenSubEntry: '1423306524117434408',
+
+    blueBullet: '1423305990958223482',
+    greenBullet: '1423306041751371916',
+    yellowBullet: '1423306085636374530',
+    lightGrayBullet: '1423306128816738365',
+    redBullet: '1423306178280296458',
+
+    empty: '1423305833587933307',
+
+    online: '1342979602468962487',
+    idle: '1342979785835544576',
+    dnd: '1342979809713848412',
+} as const
+
+export const currentApplicationEmoji = process.env.ENV === 'DEV'
+    ? applicationEmojiDev
+    : applicationEmojiProd;
+
+export default currentApplicationEmoji;

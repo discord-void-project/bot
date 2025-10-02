@@ -3,7 +3,7 @@ import { Command } from '@/structures/Command'
 import { memberService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 import { formatCompactNumber } from '@/utils'
-import embed from '@/ui/embed'
+import { EmbedUI } from '@/ui/EmbedUI'
 
 const MAX_BANK = 50000;
 
@@ -25,7 +25,9 @@ const handleDepositCommand = async ({
 
     if (member.coins < 1) {
         return await reply({
-            embeds: [embed.red(`❌ Vous n'avez rien à déposer en banque !`)]
+            embeds: [
+                EmbedUI.createMessage(`❌ Vous n'avez rien à déposer en banque !`, { color: 'red' })
+            ]
         });
     }
 
@@ -37,17 +39,22 @@ const handleDepositCommand = async ({
         amount = Math.min(member.coins, parseInt(amountInput));
         if (isNaN(amount) || amount <= 0) {
             return await reply({
-                embeds: [embed.red(`❌ Montant invalide`)],
+                embeds: [
+                    EmbedUI.createMessage(`❌ Montant invalide`, { color: 'red' })
+                ],
             });
         }
     }
 
     if (member.coins < amount) {
         return await reply({
-            embeds: [embed.red({
-                title: '❌ Fonds insuffisants',
-                description: `Tu n'as que **${member.coins}** pièces dans ton portefeuille.`,
-            })],
+            embeds: [
+                EmbedUI.createMessage({
+                    color: 'red',
+                    title: '❌ Fonds insuffisants',
+                    description: `Tu n'as que **${member.coins}** pièces dans ton portefeuille.`,
+                })
+            ],
         });
     }
 
@@ -55,7 +62,9 @@ const handleDepositCommand = async ({
         const maxDeposit = MAX_BANK - member.bank;
         if (maxDeposit <= 0) {
             return await reply({
-                embeds: [embed.red(`❌ Ta banque est déjà pleine, c'est **${formatCompactNumber(MAX_BANK)}** le max :(`)],
+                embeds: [
+                    EmbedUI.createMessage(`❌ Ta banque est déjà pleine, c'est **${formatCompactNumber(MAX_BANK)}** le max :(`, { color: 'red' })
+                ],
             });
         } else {
             amount = maxDeposit;
@@ -70,10 +79,13 @@ const handleDepositCommand = async ({
     });
 
     return await reply({
-        embeds: [embed.green({
-            title: '🏦 Dépôt effectué',
-            description: `Tu as déposé **${amount}** pièces dans ta banque.`,
-        })],
+        embeds: [
+            EmbedUI.createMessage({
+                color: 'green',
+                title: '🏦 Dépôt effectué',
+                description: `Tu as déposé **${amount}** pièces dans ta banque.`,
+            })
+        ],
     });
 };
 
@@ -122,10 +134,13 @@ export default new Command({
 
         if (!amountInput) {
             return message.reply({
-                embeds: [embed.red({
-                    title: '❌ Utilisation incorrecte',
-                    description: 'Exemple : `v!deposit 100` ou `v!deposit all`'
-                })]
+                embeds: [
+                    EmbedUI.createMessage({
+                        color: 'red',
+                        title: '❌ Utilisation incorrecte',
+                        description: 'Exemple : `v!deposit 100` ou `v!deposit all`'
+                    })
+                ]
             });
         }
 
