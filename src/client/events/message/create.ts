@@ -13,11 +13,14 @@ import { getDominantColor } from '@/utils/image'
 import { levelToXp, xpToLevel } from '@/utils/math'
 
 import { guildMemberHelper } from '@/helpers'
+import { dateElapsedRatio } from '@/utils'
 
 const channelsAutomaticThread = [
     '1351619802002886706',
     '1405139939988996207'
 ]
+
+const MAX_TAG_BOOST = 0.1;
 
 export default new Event({
     name: 'messageCreate',
@@ -69,8 +72,17 @@ export default new Event({
             },
             create: {
                 messageCount: 1
+            },
+            include: {
+                user: true
             }
         });
+
+        const ratio = member.user?.tagAssignedAt
+            ? dateElapsedRatio(new Date(member.user.tagAssignedAt), 14)
+            : 0;
+
+        const tagBoostValue = ratio * MAX_TAG_BOOST;
 
         const {
             progression: progressionSettings,
@@ -88,7 +100,7 @@ export default new Event({
                         const maxGain = ecoSettings.messageMaxGain;
                         const minGain = ecoSettings.messageMinGain;
 
-                        const randomCoins = Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain;
+                        const randomCoins = Math.floor((Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain) * tagBoostValue);
 
                         await memberService.updateOrCreate(userId, guildId, {
                             create: {
@@ -114,7 +126,7 @@ export default new Event({
                         const maxGain = progressionSettings.messageMaxGain;
                         const minGain = progressionSettings.messageMinGain;
 
-                        const randomXP = Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain;
+                        const randomXP = Math.floor((Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain) * tagBoostValue);
 
                         const currentLevel = xpToLevel(member.xp);
                         const newXP = member.xp + randomXP;
@@ -125,27 +137,9 @@ export default new Event({
                         if (reachLevelMax) {
                             const amount = levelToXp(progressionSettings.maxLevel);
 
-                            await memberService.updateOrCreate(userId, guildId, {
-                                create: {
-                                    xp: amount
-                                },
-                                update: {
-                                    xp: {
-                                        set: amount
-                                    }
-                                }
-                            })
+                            await memberService.setXp(userId, guildId, amount);
                         } else {
-                            await memberService.updateOrCreate(userId, guildId, {
-                                create: {
-                                    xp: randomXP
-                                },
-                                update: {
-                                    xp: {
-                                        increment: randomXP
-                                    }
-                                }
-                            })
+                            await memberService.addXp(userId, guildId, randomXP);
                         }
 
                         if (newLevel > currentLevel) {

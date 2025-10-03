@@ -1,7 +1,7 @@
 import { Command } from '@/structures/Command'
 import { ButtonInteraction, GuildMember, MessageFlags } from 'discord.js'
 
-import { memberService, shopItemService } from '@/database/services'
+import { memberService, shopItemService, userService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 
 import { createActionRow, createButton, createSeparator, createStringSelectMenu, createTextDisplay } from '@/ui/components/common'
@@ -10,6 +10,8 @@ import { EmbedUI } from '@/ui/EmbedUI'
 
 import { applicationEmojiHelper } from '@/helpers'
 import { formatCompactNumber } from '@/utils'
+
+const ROLE_DISCOUNT = 0.15;
 
 export default new Command({
     nameLocalizations: {
@@ -62,6 +64,8 @@ export default new Command({
         const generateComponents = async (page: number) => {
             const { total } = await getMemberBalance();
 
+            const tagBoostValue = await userService.getTagBoost(interaction.user.id);
+
             const items = allItems
                 .slice(page * itemsPerPage, (page + 1) * itemsPerPage)
                 .sort((a, b) => b.cost - a.cost);
@@ -71,11 +75,13 @@ export default new Command({
                     const role = await interaction.guild?.roles.fetch(item.roleId);
                     const isStockEpuised = typeof item.stock === 'number' && item.stock <= 0;
 
+                    const discount = tagBoostValue * ROLE_DISCOUNT;
+
                     return {
                         label: role?.name ?? 'Deleted Role',
                         description: isStockEpuised
                             ? `🛑 Rupture de stock`
-                            : `🏷️ ${formatCompactNumber(item.cost)}`,
+                            : `🏷️ ${formatCompactNumber(item.cost * (1 - discount))}`,
                         value: item.id.toString(),
                     }
                 })
@@ -92,10 +98,14 @@ export default new Command({
                         ...items.map((item) => {
                             const isStockEpuised = typeof item.stock === 'number' && item.stock <= 0;
 
+                            const discount = tagBoostValue * ROLE_DISCOUNT;
+
                             return createTextDisplay([
                                 `- **${isStockEpuised ? `~~<@&${item.roleId}>~~` : `<@&${item.roleId}>`}**`,
                                 typeof item.stock === 'number' && `**↳** 📦 Stock  ${yellowArrowEmoji} **${isStockEpuised ? 'Épuisé' : item.stock}**`,
-                                `**↳** 🏷️ Prix ${yellowArrowEmoji} **${formatCompactNumber(item.cost)}**`,
+                                discount
+                                    ? `**↳** 🏷️ Prix ${yellowArrowEmoji} ~~${formatCompactNumber(item.cost)}~~ **${formatCompactNumber(item.cost * (1 - discount))} -${discount * 100}%**`
+                                    : `**↳** 🏷️ Prix ${yellowArrowEmoji} **${formatCompactNumber(item.cost)}**`,
                             ].filter(Boolean).join('\n'));
                         }),
                         createSeparator(),
@@ -191,6 +201,9 @@ export default new Command({
                 }
 
                 const { total } = await getMemberBalance();
+                const tagBoostValue = await userService.getTagBoost(interaction.user.id);
+
+                item.cost = item.cost * ((1 - (tagBoostValue * ROLE_DISCOUNT)));
 
                 if (total < item.cost) {
                     await refreshPayload();
@@ -202,7 +215,6 @@ export default new Command({
                         ]
                     });
                 }
-
 
                 const msg = await i.update({
                     components: [
