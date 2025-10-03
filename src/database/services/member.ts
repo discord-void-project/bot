@@ -40,10 +40,10 @@ const findOrCreate = async (
     return { user, guild, member };
 };
 
-const updateOrCreate = async (
+const updateOrCreate = async <T extends Omit<Prisma.MemberUpsertArgs, 'where' | 'create' | 'update'>>(
     userId: string,
     guildId: string,
-    data: {
+    data: T & {
         update: Prisma.MemberUpdateInput;
         create?: Omit<Prisma.MemberCreateInput, 'user' | 'guild'>;
     }
@@ -68,9 +68,10 @@ const updateOrCreate = async (
             },
             ...(data.create ?? {}),
         },
+        include: data?.include
     });
 
-    return member;
+    return member as unknown as typeof member & Prisma.MemberGetPayload<T>;
 }
 
 const remove = async (userId: string, guildId: string) => {
@@ -142,10 +143,50 @@ const pay = async (
     return updatedMember;
 };
 
+const addXp = async (userId: string, guildId: string, amount: number) => {
+    return await memberService.updateOrCreate(userId, guildId, {
+        create: {
+            xp: amount
+        },
+        update: {
+            xp: {
+                increment: amount
+            }
+        }
+    })
+}
+
+const removeXp = async (userId: string, guildId: string, amount: number) => {
+    return await memberService.updateOrCreate(userId, guildId, {
+        create: {
+            xp: amount
+        },
+        update: {
+            xp: {
+                decrement: amount
+            }
+        }
+    })
+}
+
+const setXp = async (userId: string, guildId: string, amount: number) => {
+    return await memberService.updateOrCreate(userId, guildId, {
+        create: {
+            xp: amount
+        },
+        update: {
+            xp: amount
+        }
+    })
+}
+
 export const memberService = {
     find,
     updateOrCreate,
     findOrCreate,
     remove,
-    pay
+    pay,
+    addXp,
+    removeXp,
+    setXp
 }

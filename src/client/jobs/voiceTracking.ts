@@ -10,8 +10,11 @@ import { levelUpCard } from '@/ui/assets/cards/levelUpCard'
 
 import { levelToXp, xpToLevel } from '@/utils/math'
 import { getDominantColor } from '@/utils/image'
+import { dateElapsedRatio } from '@/utils'
 
 logger.log(`🔗 » VoiceSessions Job started`);
+
+const MAX_TAG_BOOST = 0.1;
 
 cron.schedule('* * * * *', async () => {
     for (const [userId, session] of client.voiceSessions.entries()) {
@@ -24,14 +27,22 @@ cron.schedule('* * * * *', async () => {
             const elapsed = now - session.timestamp;
             const minutesElapsed = Math.floor(elapsed / 60000);
 
-            if (minutesElapsed < 1) continue; // pas encore 1 minute
+            if (minutesElapsed < 1) continue;
+
+            const { user: userDatabase, member: memberRecord } = await memberService.findOrCreate(userId, guild.id);
+
+            const ratio = userDatabase?.tagAssignedAt
+                ? dateElapsedRatio(new Date(userDatabase.tagAssignedAt), 14)
+                : 0;
+
+            const tagBoostValue = ratio * MAX_TAG_BOOST;
 
             // --- Coins ---
             if (eco?.isActive && eco.isCoinsVoiceEnabled) {
                 if ((minutesElapsed % eco.voiceGainInterval) === 0) {
                     const maxGain = eco.voiceMaxGain;
                     const minGain = eco.voiceMinGain;
-                    const randomCoins = Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain;
+                    const randomCoins = Math.floor((Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain) * tagBoostValue);
 
                     await memberService.updateOrCreate(userId, guild.id, {
                         create: { coins: randomCoins },
@@ -46,14 +57,12 @@ cron.schedule('* * * * *', async () => {
                     const guildMember = await guild.members.fetch(userId).catch(() => null);
                     if (!guildMember) continue;
 
-                    const { member: memberRecord } = await memberService.findOrCreate(userId, guild.id);
-
                     let reachLevelMax = progression.maxLevel && memberRecord.level >= progression.maxLevel;
 
                     if (!reachLevelMax) {
                         const maxGain = progression.voiceMaxGain;
                         const minGain = progression.voiceMinGain;
-                        const randomXP = Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain;
+                        const randomXP = Math.floor((Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain) * tagBoostValue);
 
                         const currentLevel = xpToLevel(memberRecord.xp);
                         const newXP = memberRecord.xp + randomXP;
@@ -63,15 +72,9 @@ cron.schedule('* * * * *', async () => {
 
                         if (reachLevelMax) {
                             const amount = levelToXp(progression.maxLevel);
-                            await memberService.updateOrCreate(userId, guild.id, {
-                                create: { xp: amount },
-                                update: { xp: { set: amount } }
-                            });
+                            await memberService.setXp(userId, guild.id, amount);
                         } else {
-                            await memberService.updateOrCreate(userId, guild.id, {
-                                create: { xp: randomXP },
-                                update: { xp: { increment: randomXP } }
-                            });
+                            await memberService.addXp(userId, guild.id, randomXP);
                         }
 
                         // Level up notification

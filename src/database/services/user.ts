@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client'
 
 import prisma from '@/database/prisma'
 import { UserFlagsString } from '../utils/UserFlags'
+import { dateElapsedRatio } from '@/utils';
 
 const find = async (userId: string) => {
     return await prisma.user.findUnique({
@@ -61,6 +62,14 @@ const setTagAssignedAt = async (userId: string, date?: Date) => {
     });
 }
 
+const getTagBoost = async (userId: string, minDays?: number): Promise<number> => {
+    const user = await userService.find(userId);
+
+    if (!user?.tagAssignedAt) return 0;
+
+    return dateElapsedRatio(user.tagAssignedAt, minDays ?? 14)
+}
+
 export const userService = {
     find,
     update,
@@ -69,4 +78,5 @@ export const userService = {
     removeFlag,
     resetTagAssignedAt,
     setTagAssignedAt,
+    getTagBoost
 }
