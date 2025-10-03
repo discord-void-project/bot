@@ -1,21 +1,22 @@
 import { Command } from '@/structures'
 import { ApplicationCommandOptionType, GuildMember } from 'discord.js'
 
-import { guildSettingsService, memberService } from '@/database/services'
+import { guildSettingsService, memberService, userService } from '@/database/services'
 
 import { createProgressBar } from '@/ui/components'
 import { EmbedUI } from '@/ui'
 
-import { getXpProgress, parseUserMention } from '@/utils'
+import { dateElapsedRatio, getXpProgress, parseUserMention } from '@/utils'
 import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
 import prisma from '@/database/prisma'
 
+const MAX_TAG_BOOST = 0.1;
+
 const buildProgression = async (member: GuildMember) => {
-    const { yellowRectEmoji } = applicationEmojiHelper();
-
+    const { yellowRectEmoji, yellowArrowEmoji } = applicationEmojiHelper();
     const memberHelper = await guildMemberHelper(member);
-
     const progressionSetting = await guildSettingsService.findOrCreate(member.guild.id, 'progression');
+
     if (progressionSetting && progressionSetting.isActive) {
         const memberDatabase = await memberService.find(member.id, member.guild.id);
 
@@ -24,13 +25,21 @@ const buildProgression = async (member: GuildMember) => {
                 where: { xp: { gt: memberDatabase.xp } }
             }) + 1;
 
-            const { current, required } = getXpProgress(memberDatabase.xp)
+            const { current, required } = getXpProgress(memberDatabase.xp);
+
+            const user = await userService.find(member.id);
+
+            const ratio = user?.tagAssignedAt
+                ? dateElapsedRatio(new Date(user.tagAssignedAt), 14)
+                : 0;
+
+            const tagBoostValue = ratio * MAX_TAG_BOOST;
+            const tagBoostPercent = Math.round(tagBoostValue * 100);
+            const maxTagBoostPercent = Math.round(MAX_TAG_BOOST * 100);
 
             return EmbedUI.create({
                 color: 'yellow',
-                thumbnail: {
-                    url: memberHelper.getAvatarURL()
-                },
+                thumbnail: { url: memberHelper.getAvatarURL() },
                 title: `Progression de ${memberHelper.getName()}`,
                 fields: [
                     {
@@ -54,11 +63,13 @@ const buildProgression = async (member: GuildMember) => {
                             length: 7,
                             filledChar: yellowRectEmoji?.toString(),
                             showPercentage: true
-                        }),
+                        })
                     },
                     {
                         name: 'Boosts',
-                        value: 'Bientôt disponible ⏳'
+                        value: [
+                            `- Tag du serveur ${yellowArrowEmoji} **+${tagBoostPercent}%** / **${maxTagBoostPercent}% MAX**`
+                        ].join('\n')
                     }
                 ],
                 timestamp: Date.now()

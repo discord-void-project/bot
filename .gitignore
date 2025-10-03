@@ -7,3 +7,5 @@ build
 dist
 .cache
 .vscode
+
+src/**/test.*
