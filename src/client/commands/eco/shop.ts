@@ -10,6 +10,7 @@ import { EmbedUI } from '@/ui/EmbedUI'
 
 import { applicationEmojiHelper } from '@/helpers'
 import { formatCompactNumber } from '@/utils'
+import { memberBankService } from '@/database/services/memberBankService'
 
 const ROLE_DISCOUNT = 0.15;
 
@@ -47,17 +48,18 @@ export default new Command({
         const maxPages = Math.ceil(allItems.length / itemsPerPage);
 
         const getMemberBalance = async () => {
-            const { member: memberRecord } = await memberService.findOrCreate(interaction.user.id, interaction.guild!.id) ?? {
+            const { member: memberRecord } = await memberService.findOrCreate(interaction.user.id, interaction.guild.id) ?? {
                 memberRecord: {
                     coins: 0,
-                    bank: 0
                 }
             };
 
+            const memberBank = await memberBankService.findOrCreate(interaction.user.id, interaction.guild.id);
+
             return {
                 coins: memberRecord.coins,
-                bank: memberRecord.bank,
-                total: memberRecord.coins + memberRecord.bank
+                bank: memberBank.funds,
+                total: memberRecord.coins + memberBank.funds
             }
         }
 

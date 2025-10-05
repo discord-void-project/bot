@@ -5,6 +5,7 @@ import { memberService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 import { createCooldown } from '@/utils'
 import { EmbedUI } from '@/ui/EmbedUI'
+import { memberBankService } from '@/database/services/memberBankService'
 
 const SUCCESS_CHANCE = 0.2;
 const STEAL_PERCENTAGE = 0.25;
@@ -91,6 +92,8 @@ export default new Command({
             });
         }
 
+        const robberBank = await memberBankService.findOrCreate(robberId, guildId);
+
         const { member: robber } = await memberService.findOrCreate(robberId, guildId);
         const { member: target } = await memberService.findOrCreate(targetUser.id, guildId);
 
@@ -121,7 +124,7 @@ export default new Command({
                 ],
             });
         } else {
-            const totalAssets = robber.coins + robber.bank;
+            const totalAssets = robber.coins + robberBank.funds;
             const penalty = Math.floor(totalAssets * 0.02);
 
             let remainingPenalty = penalty;
@@ -129,13 +132,19 @@ export default new Command({
             const coinsDecrement = Math.min(robber.coins, remainingPenalty);
             remainingPenalty -= coinsDecrement;
 
-            const bankDecrement = Math.min(robber.bank, remainingPenalty);
+            const bankDecrement = Math.min(robberBank.funds, remainingPenalty);
             remainingPenalty -= bankDecrement;
 
             await memberService.updateOrCreate(robberId, guildId, {
                 update: {
                     coins: { decrement: coinsDecrement },
-                    bank: { decrement: bankDecrement },
+                    bank: {
+                        update: {
+                            funds: {
+                                decrement: bankDecrement
+                            }
+                        }
+                    },
                     lastRobAt: new Date(),
                 },
             });

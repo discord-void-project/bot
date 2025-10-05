@@ -10,5 +10,4 @@ model GuildLevelReward {
 
     @@id([guildId, atLevel])
     @@unique([roleId, atLevel])
-    @@map("guild_level_rewards")
 }
