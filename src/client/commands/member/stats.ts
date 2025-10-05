@@ -18,7 +18,11 @@ const buildStats = async (member: GuildMember) => {
 
     const formatTime = (time: number) => {
         if (time >= 60) {
-            return `**${Math.floor(time / 60)}** heures`;
+            const hours = Math.floor(time / 60);
+            const minutes = time % 60;
+            return minutes > 0
+                ? `**${hours}** heures et **${minutes}** minutes`
+                : `**${hours}** heures`;
         } else {
             return `**${time}** minutes`;
         }
