@@ -113,6 +113,11 @@ cron.schedule('* * * * *', async () => {
                 }
             }
 
+            await memberService.updateOrCreate(userId, guild.id, {
+                create: { voiceTotalMinutes: minutesElapsed },
+                update: { voiceTotalMinutes: { increment: minutesElapsed } }
+            });
+
             client.voiceSessions.set(userId, { ...session, timestamp: now });
         }
     }
