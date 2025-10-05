@@ -4,8 +4,7 @@ import { memberService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 import { formatCompactNumber } from '@/utils'
 import { EmbedUI } from '@/ui/EmbedUI'
-
-const MAX_BANK = 50000;
+import { memberBankService } from '@/database/services/memberBankService'
 
 interface HandleDepositContext {
     userId: string;
@@ -58,12 +57,14 @@ const handleDepositCommand = async ({
         });
     }
 
-    if (member.bank + amount > MAX_BANK) {
-        const maxDeposit = MAX_BANK - member.bank;
+    const memberBank = await memberBankService.findOrCreate(userId, guildId);
+
+    if (memberBank.funds > memberBank.maxCapacity) {
+        const maxDeposit = memberBank.maxCapacity - memberBank.funds;
         if (maxDeposit <= 0) {
             return await reply({
                 embeds: [
-                    EmbedUI.createMessage(`❌ Ta banque est déjà pleine, c'est **${formatCompactNumber(MAX_BANK)}** le max :(`, { color: 'red' })
+                    EmbedUI.createErrorMessage(`Ta banque est déjà pleine, c'est **${formatCompactNumber(memberBank.maxCapacity)}** le max :(`)
                 ],
             });
         } else {
@@ -74,7 +75,13 @@ const handleDepositCommand = async ({
     await memberService.updateOrCreate(userId, guildId, {
         update: {
             coins: { decrement: amount },
-            bank: { increment: amount },
+            bank: {
+                update: {
+                    funds: {
+                        increment: amount
+                    }
+                }
+            },
         },
     });
 

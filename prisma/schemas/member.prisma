@@ -9,13 +9,14 @@ model Member {
     messageCount      Int @default(0)
     voiceTotalMinutes Int @default(0)
     coins             Int @default(0)
-    bank              Int @default(0)
 
     dailyStreak Int @default(0)
 
     lastDailyAt DateTime?
     lastWorkAt  DateTime?
     lastRobAt   DateTime?
+
+    bank MemberBank?
 
     @@id([userId, guildId])
 }

@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client'
 import prisma from '@/database/prisma'
+import { memberBankService } from './memberBankService';
 
 const find = async (
     userId: string,
@@ -92,11 +93,12 @@ const pay = async (
     const useBank = options.bank ?? false;
 
     const { member } = await findOrCreate(userId, guildId);
+    const bankData = await memberBankService.findOrCreate(userId, guildId);
 
     let remaining = amount;
 
     let coins = member.coins ?? 0;
-    let bank = member.bank ?? 0;
+    let bank = bankData.funds ?? 0;
 
     if (useCoins && coins >= remaining) {
         coins -= remaining;
@@ -136,7 +138,11 @@ const pay = async (
     const updatedMember = await updateOrCreate(userId, guildId, {
         update: {
             coins,
-            bank,
+            bank: {
+                update: {
+                    funds: bank
+                }
+            }
         },
     });
 

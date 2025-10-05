@@ -33,11 +33,11 @@ const handleLeaderboardCommand = async ({
     const leaderboard = allMembers
         .map((member) => ({
             userId: member.userId,
-            total: member.bank + member.coins
+            total: (member.bank?.funds ?? 0) + member.coins
         }))
         .sort((a, b) => b.total - a.total)
 
-    const totalEconomy = allMembers.reduce((sum, m) => sum + m.bank + m.coins, 0);
+    const totalEconomy = allMembers.reduce((sum, m) => sum + (m.bank?.funds ?? 0) + m.coins, 0);
 
     const medals = ['🥇', '🥈', '🥉'];
 
