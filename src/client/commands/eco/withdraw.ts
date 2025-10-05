@@ -4,6 +4,7 @@ import { memberService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 
 import { EmbedUI } from '@/ui/EmbedUI'
+import { memberBankService } from '@/database/services/memberBankService';
 
 interface HandleWithdrawContext {
     userId: string;
@@ -19,12 +20,12 @@ const handleWithdrawCommand = async ({
     amountInput,
     reply
 }: HandleWithdrawContext) => {
-    const { member } = await memberService.findOrCreate(userId, guildId);
-
-    if (member.bank < 1) {
+    const memberBank = await memberBankService.findOrCreate(userId, guildId);
+    
+    if (memberBank.funds < 1) {
         return await reply({
             embeds: [
-                EmbedUI.createMessage(`❌ Vous n'avez rien à retirer de la banque !`, { color: 'red' })
+                EmbedUI.createErrorMessage(`Vous n'avez rien à retirer de la banque !`)
             ]
         });
     }
@@ -32,25 +33,24 @@ const handleWithdrawCommand = async ({
     let amount: number;
 
     if (amountInput.toLowerCase() === 'all') {
-        amount = member.bank;
+        amount = memberBank.funds;
     } else {
-        amount = Math.min(member.bank, parseInt(amountInput));
+        amount = Math.min(memberBank.funds, parseInt(amountInput));
         if (isNaN(amount) || amount <= 0) {
             return reply({
                 embeds: [
-                    EmbedUI.createMessage(`❌ Montant invalide`, { color: 'red' })
+                    EmbedUI.createErrorMessage(`Montant invalide`)
                 ],
             });
         }
     }
 
-    if (member.bank < amount) {
+    if (memberBank.funds < amount) {
         return reply({
             embeds: [
-                EmbedUI.createMessage({
-                    color: 'red',
-                    title: '❌ Fonds insuffisants',
-                    description: `Tu n'as que **${member.bank}** pièces en banque.`,
+                EmbedUI.createErrorMessage({
+                    title: 'Fonds insuffisants',
+                    description: `Tu n'as que **${memberBank.funds}** pièces en banque :/`,
                 })
             ]
         });
@@ -58,7 +58,13 @@ const handleWithdrawCommand = async ({
 
     await memberService.updateOrCreate(userId, guildId, {
         update: {
-            bank: { decrement: amount },
+            bank: {
+                update: {
+                    funds: {
+                        decrement: amount
+                    }
+                }
+            },
             coins: { increment: amount },
         },
     });

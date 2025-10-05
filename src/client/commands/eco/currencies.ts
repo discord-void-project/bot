@@ -7,6 +7,7 @@ import { EmbedUI } from '@/ui/EmbedUI'
 
 import { formatCompactNumber, parseUserMention } from '@/utils'
 import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
+import { memberBankService, tierCapacity } from '@/database/services/memberBankService'
 
 const buildEmbed = async (member: GuildMember) => {
     const { yellowSubEntryEmoji, yellowArrowEmoji } = applicationEmojiHelper();
@@ -17,7 +18,10 @@ const buildEmbed = async (member: GuildMember) => {
     const memberHelper = await guildMemberHelper(member, { fetchAll: true });
     const memberDatabase = await memberService.find(userId, guildId) ?? {
         coins: 0,
-        bank: 0
+    };
+    const memberBank = await memberBankService.find(userId, guildId) ?? {
+        funds: 0,
+        maxCapacity: tierCapacity['TIER_0']
     };
 
     return EmbedUI.createMessage({
@@ -30,7 +34,7 @@ const buildEmbed = async (member: GuildMember) => {
             {
                 name: '🪙 Coins',
                 value: [
-                    `${yellowSubEntryEmoji} 🏦 Banque ${yellowArrowEmoji} **${formatCompactNumber(memberDatabase.bank)}** / **${formatCompactNumber(50_000)}**`,
+                    `${yellowSubEntryEmoji} 🏦 Banque ${yellowArrowEmoji} **${formatCompactNumber(memberBank.funds)}** / **${formatCompactNumber(memberBank.maxCapacity)}**`,
                     `${yellowSubEntryEmoji} 💶 Poche ${yellowArrowEmoji} **${formatCompactNumber(memberDatabase.coins)}**`
                 ].join('\n')
             },

@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import logger from '@/utils/logger'
 
-import { userExtension, memberExtension } from './extensions'
+import { userExtension, memberExtension, memberBankExtension } from './extensions'
 
 export const prismaLogger = logger.use({
     prefix: (c) => c.white(`[${c.cyanBright(`PRISMA`)}] <🗄️>`)
@@ -9,6 +9,7 @@ export const prismaLogger = logger.use({
 
 const prisma = new PrismaClient()
     .$extends(userExtension)
-    .$extends(memberExtension);
+    .$extends(memberExtension)
+    .$extends(memberBankExtension);
 
 export default prisma;
