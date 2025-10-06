@@ -13,10 +13,14 @@ import { UserFlags } from '@/database/utils/UserFlags'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 const replyBy = async (interaction: Message | ChatInputCommandInteraction, payload: BaseMessageOptions) => {
-    if (interaction instanceof ChatInputCommandInteraction) {
-        return await interaction.reply(payload);
-    } else if (interaction instanceof Message && interaction.channel.isSendable()) {
-        return await interaction.reply(payload);
+    try {
+        if (interaction instanceof ChatInputCommandInteraction) {
+            return await interaction.reply(payload);
+        } else if (interaction instanceof Message && interaction.channel.isSendable()) {
+            return await interaction.reply(payload);
+        }
+    } catch {
+        console.log('ERROR SLASH COMMAND 404');
     }
 }
 
