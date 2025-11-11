@@ -35,7 +35,7 @@ cron.schedule('* * * * *', async () => {
                 ? dateElapsedRatio(new Date(userDatabase.tagAssignedAt), 14)
                 : 0;
 
-            const tagBoostValue = ratio ? ratio * MAX_TAG_BOOST : 1;
+            const tagBoostValue = ratio ? 1 + (ratio * MAX_TAG_BOOST) : 1;
 
             // --- Coins ---
             if (eco?.isActive && eco.isCoinsVoiceEnabled) {
