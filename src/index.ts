@@ -19,11 +19,11 @@ import client from './client/instance'
 import { GlobalFonts } from '@napi-rs/canvas'
 import path from 'path'
 
+
 GlobalFonts.registerFromPath(path.join(
     process.cwd(),
     'src',
     'ui',
-    'assets',
     'fonts',
     'Quantico-Bold.ttf'
 ), 'Quantico Bold');
