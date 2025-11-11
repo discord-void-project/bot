@@ -24,6 +24,7 @@ GlobalFonts.registerFromPath(path.join(
     process.cwd(),
     'src',
     'ui',
+    'assets',
     'fonts',
     'Quantico-Bold.ttf'
 ), 'Quantico Bold');
