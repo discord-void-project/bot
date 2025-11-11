@@ -17,6 +17,8 @@ COPY src ./src
 
 RUN npx tsup && npx tsc-alias
 
+COPY src/ui/assets/fonts ./build/ui/assets/fonts
+
 FROM node:23-alpine
 
 WORKDIR /bot

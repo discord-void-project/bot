@@ -82,7 +82,7 @@ export default new Event({
             ? dateElapsedRatio(new Date(member.user.tagAssignedAt), 14)
             : 0;
 
-        const tagBoostValue = ratio * MAX_TAG_BOOST;
+        const tagBoostValue = ratio ? ratio * MAX_TAG_BOOST : 1;
 
         const {
             progression: progressionSettings,
