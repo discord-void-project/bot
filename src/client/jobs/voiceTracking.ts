@@ -118,8 +118,6 @@ cron.schedule('* * * * *', async () => {
                 create: { voiceTotalMinutes: minutesElapsed },
                 update: { voiceTotalMinutes: { increment: minutesElapsed } }
             });
-
-            client.voiceSessions.set(userId, { ...session, timestamp: now });
         }
     }
 });
