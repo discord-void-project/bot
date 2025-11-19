@@ -7,8 +7,8 @@ import { createCooldown } from '@/utils'
 import { EmbedUI } from '@/ui/EmbedUI'
 import { memberBankService } from '@/database/services/memberBankService'
 
-const SUCCESS_CHANCE = 0.2;
-const STEAL_PERCENTAGE = 0.25;
+const SUCCESS_CHANCE = 0.3;
+const STEAL_PERCENTAGE = 0.20;
 
 export default new Command({
     nameLocalizations: {

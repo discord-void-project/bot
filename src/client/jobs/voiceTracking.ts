@@ -11,6 +11,7 @@ import { levelUpCard } from '@/ui/assets/cards/levelUpCard'
 import { levelToXp, xpToLevel } from '@/utils/math'
 import { getDominantColor } from '@/utils/image'
 import { dateElapsedRatio } from '@/utils'
+import { GuildMember } from 'discord.js'
 
 logger.log(`🔗 » VoiceSessions Job started`);
 
@@ -55,7 +56,7 @@ cron.schedule('* * * * *', async () => {
             if (progression?.isActive && progression.isXpVoiceEnabled) {
                 if ((minutesElapsed % progression.voiceGainInterval) === 0) {
                     const guildMember = await guild.members.fetch(userId).catch(() => null);
-                    if (!guildMember) continue;
+                    if (!(guildMember instanceof GuildMember)) continue;
 
                     let reachLevelMax = progression.maxLevel && memberRecord.level >= progression.maxLevel;
 
