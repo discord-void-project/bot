@@ -116,7 +116,7 @@ cron.schedule('* * * * *', async () => {
 
             await memberService.updateOrCreate(userId, guild.id, {
                 create: { voiceTotalMinutes: minutesElapsed },
-                update: { voiceTotalMinutes: { increment: minutesElapsed } }
+                update: { voiceTotalMinutes: { increment: 1 } }
             });
         }
     }
