@@ -10,7 +10,7 @@ import { EmbedUI } from '@/ui/EmbedUI'
 
 import { applicationEmojiHelper } from '@/helpers'
 import { formatCompactNumber } from '@/utils'
-import { memberBankService } from '@/database/services/memberBankService'
+import { memberBankService } from '@/database/services/member-bank-service'
 
 const ROLE_DISCOUNT = 0.15;
 

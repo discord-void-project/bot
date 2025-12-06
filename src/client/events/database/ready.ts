@@ -1,7 +1,7 @@
 import { Event } from '@/structures'
 
-import { prismaLogger } from '@/database/prisma'
 import { userService } from '@/database/services'
+import db from '@/database/db';
 
 const LUNARIA_GUILD_ID = '1280087771540623413';
 const REWARD_ROLE_ID = '1301111729182216345';
@@ -10,7 +10,7 @@ export default new Event({
     name: 'databaseReady',
     once: true,
     async run() {
-        prismaLogger.log('✅ » Connexion established\n')
+        db.logger.log('✅ » Connexion established\n')
         this.client.isDatabaseConnected = true;
 
         const guild = await this.client.guilds.fetch(LUNARIA_GUILD_ID);

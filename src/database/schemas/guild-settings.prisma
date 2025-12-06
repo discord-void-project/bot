@@ -6,4 +6,5 @@ model GuildSettings {
     guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
     @@id([guildId, name])
+    @@map("guild_settings")
 }

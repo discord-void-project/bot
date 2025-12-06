@@ -4,7 +4,7 @@ import { memberService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 import { formatCompactNumber } from '@/utils'
 import { EmbedUI } from '@/ui/EmbedUI'
-import { memberBankService } from '@/database/services/memberBankService'
+import { memberBankService } from '@/database/services/member-bank-service'
 
 interface HandleDepositContext {
     userId: string;

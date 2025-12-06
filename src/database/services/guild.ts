@@ -1,5 +1,4 @@
-import { BlacklistStatus, Prisma } from '@prisma/client'
-import prisma from '@/database/prisma'
+import prisma from '@/database/db'
 
 const findUser = async (userId: string) => {
     return await prisma.blacklist.findUnique({
@@ -7,7 +6,7 @@ const findUser = async (userId: string) => {
     });
 }
 
-const addBlacklist = async (options: Prisma.BlacklistUncheckedCreateInput) => {
+const addBlacklist = async (options: any) => {
     const { userId, modId, ...data } = options;
 
     return await prisma.blacklist.upsert({
@@ -46,7 +45,7 @@ const removeBlacklist = async (userId: string) => {
     return null;
 }
 
-const updateBlacklistStatus = async (userId: string, status: BlacklistStatus) => {
+const updateBlacklistStatus = async (userId: string, status: any) => {
     return await prisma.blacklist.update({
         where: { userId },
         data: { status }

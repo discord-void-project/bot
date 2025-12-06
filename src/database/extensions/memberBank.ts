@@ -1,5 +1,5 @@
-import { Prisma } from '@prisma/client'
-import { tierCapacity } from '../services/memberBankService'
+import { Prisma } from '../core/client'
+import { tierCapacity } from '../services/member-bank-service'
 
 export const memberBankExtension = Prisma.defineExtension({
     result: {

@@ -8,7 +8,7 @@ import { EmbedUI } from '@/ui'
 
 import { dateElapsedRatio, getXpProgress, parseUserMention } from '@/utils'
 import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
-import prisma from '@/database/prisma'
+import db from '@/database/db'
 
 const MAX_TAG_BOOST = 0.1;
 
@@ -21,7 +21,7 @@ const buildProgression = async (member: GuildMember) => {
         const memberDatabase = await memberService.find(member.id, member.guild.id);
 
         if (memberDatabase) {
-            const rank = await prisma.member.count({
+            const rank = await db.member.count({
                 where: { xp: { gt: memberDatabase.xp } }
             }) + 1;
 

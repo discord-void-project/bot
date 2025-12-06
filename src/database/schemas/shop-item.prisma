@@ -9,4 +9,5 @@ model ShopItem {
     roleId String
 
     createdAt DateTime @default(now())
+    @@map("shop_item")
 }

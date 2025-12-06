@@ -11,4 +11,5 @@ model GuildIgnoredChannel {
     guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
     @@id([guildId, channelId])
+    @@map("guild_ignored_channel")
 }

@@ -1,6 +1,6 @@
 import { Event } from '@/structures'
 
-import { BlacklistStatus } from '@prisma/client'
+import { BlacklistStatus } from '@/database/core/enums'
 import { guildService } from '@/database/services'
 
 import { EmbedUI } from '@/ui/EmbedUI'

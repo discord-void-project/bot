@@ -1,4 +1,4 @@
-import prisma from '@/database/prisma'
+import prisma from '@/database/db'
 
 export const defaultGuildSettings = {
     eco: {

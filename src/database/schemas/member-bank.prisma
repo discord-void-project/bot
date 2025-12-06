@@ -20,4 +20,5 @@ model MemberBank {
     funds Int            @default(0)
 
     @@id([userId, guildId])
+    @@map("member_bank")
 }

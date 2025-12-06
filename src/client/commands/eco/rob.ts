@@ -5,7 +5,7 @@ import { memberService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 import { createCooldown } from '@/utils'
 import { EmbedUI } from '@/ui/EmbedUI'
-import { memberBankService } from '@/database/services/memberBankService'
+import { memberBankService } from '@/database/services/member-bank-service'
 
 const SUCCESS_CHANCE = 0.3;
 const STEAL_PERCENTAGE = 0.20;

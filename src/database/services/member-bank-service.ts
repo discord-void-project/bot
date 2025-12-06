@@ -1,5 +1,5 @@
-import { MemberBankTier, Prisma } from '@prisma/client'
-import prisma from '../prisma'
+import { MemberBankTier } from '@/database/core/enums'
+import db from '@/database/db'
 
 export const tierCapacity = {
 	TIER_0: 50_000,
@@ -29,7 +29,7 @@ const find = async (
 	userId: string,
 	guildId: string,
 ) => {
-	return await prisma.memberBank.findUnique({
+	return await db.memberBank.findUnique({
 		where: {
 			userId_guildId: {
 				userId,
@@ -42,12 +42,9 @@ const find = async (
 const updateOrCreate = async (
 	userId: string,
 	guildId: string,
-	data?: {
-		update?: Prisma.MemberBankUpdateInput
-		create?: Omit<Prisma.MemberBankCreateInput, 'member' | 'memberId'>
-	}
+	data?: any
 ) => {
-	return await prisma.memberBank.upsert({
+	return await db.memberBank.upsert({
 		where: { userId_guildId: { userId, guildId } },
 		update: data?.update ?? {},
 		create: {
@@ -75,7 +72,7 @@ const updateOrCreate = async (
 	})
 }
 
-const findOrCreate = async (userId: string, guildId: string, data?: Omit<Prisma.MemberBankCreateInput, 'member' | 'memberId'>) => {
+const findOrCreate = async (userId: string, guildId: string, data?: any) => {
 	return await updateOrCreate(userId, guildId, {
 		create: data
 	});
@@ -130,7 +127,7 @@ const getNextTier = async (userId: string, guildId: string) => {
 		return null;
 	}
 
-	const nextTier = tiers[nextIndex] as MemberBankTier;
+	const nextTier = tiers[nextIndex];
 
 	return {
 		value: nextTier,

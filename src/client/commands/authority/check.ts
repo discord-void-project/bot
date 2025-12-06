@@ -1,6 +1,6 @@
 import { Command } from '@/structures/Command'
 
-import prisma from '@/database/prisma'
+import db from '@/database/db'
 import { guildService } from '@/database/services'
 
 import { createActionRow, createButton } from '@/ui/components/common'
@@ -21,7 +21,7 @@ export default new Command({
         userId = parseUserMention(userId) ?? userId ?? message.author.id;
 
         const [userDatabase, banInfo] = await Promise.all([
-            prisma.blacklist.findUnique({
+            db.blacklist.findUnique({
                 where: { userId },
                 include: {
                     user: true,

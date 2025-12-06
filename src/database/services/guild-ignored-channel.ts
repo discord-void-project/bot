@@ -1,7 +1,6 @@
-import { IgnoredType } from '@prisma/client'
-import prisma from '@/database/prisma'
+import prisma from '@/database/db'
 
-async function findMany(guildId: string, type: IgnoredType) {
+async function findMany(guildId: string, type: any) {
     const records = await prisma.guildIgnoredChannel.findMany({
         where: { guildId, type },
         select: { channelId: true }
@@ -10,7 +9,7 @@ async function findMany(guildId: string, type: IgnoredType) {
     return records.map((r: any) => r.channelId)
 }
 
-async function add(guildId: string, channelId: string, type: IgnoredType) {
+async function add(guildId: string, channelId: string, type: any) {
     return await prisma.guildIgnoredChannel.upsert({
         where: {
             guildId_channelId: { guildId, channelId }
@@ -20,7 +19,7 @@ async function add(guildId: string, channelId: string, type: IgnoredType) {
     })
 }
 
-async function remove(guildId: string, channelId: string, type: IgnoredType) {
+async function remove(guildId: string, channelId: string, type: any) {
     const record = await prisma.guildIgnoredChannel.findUnique({
         where: {
             guildId_channelId: { guildId, channelId },
@@ -38,7 +37,7 @@ async function remove(guildId: string, channelId: string, type: IgnoredType) {
     })
 }
 
-async function clear(guildId: string, type?: IgnoredType) {
+async function clear(guildId: string, type?: any) {
     if (type) {
         await prisma.guildIgnoredChannel.deleteMany({ where: { guildId, type } })
     } else {
@@ -46,7 +45,7 @@ async function clear(guildId: string, type?: IgnoredType) {
     }
 }
 
-const has = async (guildId: string, type: IgnoredType, channelId: string) => {
+const has = async (guildId: string, type: any, channelId: string) => {
     const channels = await findMany(guildId, type);
     return channels.includes(channelId);
 }

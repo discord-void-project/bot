@@ -1,4 +1,4 @@
-import prisma from '@/database/prisma'
+import prisma from '@/database/db'
 
 async function findMany(guildId: string) {
     return await prisma.shopItem.findMany({

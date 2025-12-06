@@ -11,14 +11,13 @@ import './helpers/extends/String'
 
 import pkg from '@pkg'
 import { version as djsVersion } from 'discord.js'
-import { Prisma } from '@prisma/client'
+import { Prisma } from './database/core/client'
 
 import logger from './utils/logger'
 import client from './client/instance'
 
 import { GlobalFonts } from '@napi-rs/canvas'
 import path from 'path'
-
 
 GlobalFonts.registerFromPath(path.join(
     process.cwd(),

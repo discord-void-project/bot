@@ -5,10 +5,9 @@ import {
     Message,
 } from 'discord.js'
 
-import { Blacklist } from '@prisma/client'
-
 import { Command } from './Command'
 import { CustomClient } from './CustomClient'
+import { BlacklistModel } from '@/database/core/models'
 
 export interface CustomClientEvents extends ClientEvents {
     chatInputInteractionCreate: [ChatInputCommandInteraction],
@@ -16,8 +15,8 @@ export interface CustomClientEvents extends ClientEvents {
     commandCreate: [Command, Message | ChatInputCommandInteraction, string[] | null[]],
     databaseDisconnected: [...args: any],
     databaseReady: [...args: any],
-    blacklistCreate: [Blacklist],
-    blacklistAccepted: [Blacklist],
+    blacklistCreate: [BlacklistModel],
+    blacklistAccepted: [BlacklistModel],
 };
 
 export interface EventRunOptions<Event extends keyof CustomClientEvents> {

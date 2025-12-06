@@ -4,7 +4,7 @@ import { memberService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 
 import { EmbedUI } from '@/ui/EmbedUI'
-import { memberBankService } from '@/database/services/memberBankService';
+import { memberBankService } from '@/database/services/member-bank-service';
 
 interface HandleWithdrawContext {
     userId: string;

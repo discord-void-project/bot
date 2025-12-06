@@ -1,7 +1,7 @@
 import { Command } from '@/structures/Command'
 import { Guild } from 'discord.js'
 
-import prisma from '@/database/prisma'
+import db from '@/database/db'
 import { mainGuildConfig } from '@/client/config/mainGuild'
 import { EmbedUI } from '@/ui/EmbedUI'
 import { formatCompactNumber } from '@/utils'
@@ -17,7 +17,7 @@ const handleLeaderboardCommand = async ({
     guild,
     reply
 }: HandleLeaderboardContext) => {
-    const allMembers = await prisma.member.findMany({
+    const allMembers = await db.member.findMany({
         where: { guildId: guild!.id },
         select: { userId: true, coins: true, bank: true }
     });

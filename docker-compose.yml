@@ -1,9 +1,19 @@
 services:
     prod:
-        container_name: bot-prod
+        container_name: void-bot-prod
         build:
             context: .
             dockerfile: Dockerfile
+            args:
+                DATABASE_URL: ${DATABASE_URL}
         image: void:latest
+        restart: always
+        env_file: .env.prod
+    preview:
+        container_name: void-bot-preview
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: void:preview
         restart: always
         env_file: .env.prod

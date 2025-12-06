@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client'
+import { Prisma } from '../core/client'
 import { UserFlagsBitField } from '@/database/utils'
 
 export const userExtension = Prisma.defineExtension({

@@ -1,6 +1,5 @@
-import { Prisma } from '@prisma/client'
-import prisma from '@/database/prisma'
-import { memberBankService } from './memberBankService';
+import prisma from '@/database/db'
+import { memberBankService } from './member-bank-service'
 
 const find = async (
     userId: string,
@@ -41,13 +40,10 @@ const findOrCreate = async (
     return { user, guild, member };
 };
 
-const updateOrCreate = async <T extends Omit<Prisma.MemberUpsertArgs, 'where' | 'create' | 'update'>>(
+const updateOrCreate = async (
     userId: string,
     guildId: string,
-    data: T & {
-        update: Prisma.MemberUpdateInput;
-        create?: Omit<Prisma.MemberCreateInput, 'user' | 'guild'>;
-    }
+    data: any
 ) => {
     const member = await prisma.member.upsert({
         where: {
@@ -72,7 +68,7 @@ const updateOrCreate = async <T extends Omit<Prisma.MemberUpsertArgs, 'where' | 
         include: data?.include
     });
 
-    return member as unknown as typeof member & Prisma.MemberGetPayload<T>;
+    return member
 }
 
 const remove = async (userId: string, guildId: string) => {

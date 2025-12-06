@@ -7,5 +7,6 @@ model BlacklistGuild {
 
     accepted Boolean?
 
-    @@unique([guildId, userId])    
+    @@unique([guildId, userId])
+    @@map("blacklist_guild")
 }

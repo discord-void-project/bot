@@ -7,7 +7,7 @@ import { EmbedUI } from '@/ui/EmbedUI'
 
 import { formatCompactNumber, parseUserMention } from '@/utils'
 import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
-import { memberBankService, tierCapacity } from '@/database/services/memberBankService'
+import { memberBankService, tierCapacity } from '@/database/services/member-bank-service'
 
 const buildEmbed = async (member: GuildMember) => {
     const { yellowSubEntryEmoji, yellowArrowEmoji } = applicationEmojiHelper();

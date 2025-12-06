@@ -7,7 +7,7 @@ import {
 
 import { Event } from '@/structures'
 
-import prisma from '@/database/prisma'
+import db from '@/database/db'
 import { UserFlags } from '@/database/utils/UserFlags'
 
 import { EmbedUI } from '@/ui/EmbedUI'
@@ -58,7 +58,7 @@ export default new Event({
                 throw new Error('No guild or no user')
             };
 
-            const userDatabase = await prisma.user.findUnique({
+            const userDatabase = await db.user.findUnique({
                 where: {
                     id: user.id
                 }
