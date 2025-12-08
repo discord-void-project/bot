@@ -1,5 +1,7 @@
 import { Command } from '@/structures/Command'
-import { memberService, userService } from '@/database/services'
+
+import { memberService } from '@/database/services'
+import { userService } from '@/database/services'
 
 import { ApplicationCommandOptionType, MessageFlags } from 'discord.js'
 import { memberBankService } from '@/database/services'

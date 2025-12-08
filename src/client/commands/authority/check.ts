@@ -1,7 +1,7 @@
 import { Command } from '@/structures/Command'
 
 import db from '@/database/db'
-import { guildService } from '@/database/services'
+import { blacklistGuildService } from '@/database/services'
 
 import { createActionRow, createButton } from '@/ui/components/common'
 import { EmbedUI } from '@/ui/EmbedUI'
@@ -107,10 +107,15 @@ export default new Command({
         });
 
         collector.on('collect', async (i) => {
+            const key = {
+                guildId: i.guild.id,
+                userId
+            }
+
             if (i.customId === 'allow') {
-                guildBlacklist = await guildService.authorizeUserGuildBlacklist(i.guild.id, userId) as any
+                guildBlacklist = await blacklistGuildService.authorize(key) as any
             } else if (i.customId === 'unallow') {
-                guildBlacklist = await guildService.unauthorizeUserGuildBlacklist(i.guild.id, userId);
+                guildBlacklist = await blacklistGuildService.unauthorize(key);
             }
 
             return await i.update(buildPayload());

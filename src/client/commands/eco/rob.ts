@@ -1,11 +1,12 @@
 import { Command } from '@/structures/Command'
 import { ApplicationCommandOptionType, MessageFlags } from 'discord.js'
 
-import { memberService } from '@/database/services'
+import { memberService } from '@/database/services/v2/member'
 import { mainGuildConfig } from '@/client/config'
 import { createCooldown } from '@/utils'
 import { EmbedUI } from '@/ui/EmbedUI'
 import { memberBankService } from '@/database/services/member-bank-service'
+import db from '@/database/db'
 
 const SUCCESS_CHANCE = 0.3;
 const STEAL_PERCENTAGE = 0.20;
@@ -73,11 +74,14 @@ export default new Command({
             });
         }
 
-        const { member } = await memberService.findOrCreate(robberId, guildId);
+        let robber = await memberService.findOrCreate({
+            userId: robberId,
+            guildId
+        });
 
         const COOLDOWN = 60 * 60 * 1000;
 
-        const { isActive } = createCooldown(member.lastRobAt, COOLDOWN);
+        const { isActive } = createCooldown(robber.lastRobAt, COOLDOWN);
 
         if (isActive) {
             return interaction.reply({
@@ -94,24 +98,41 @@ export default new Command({
 
         const robberBank = await memberBankService.findOrCreate(robberId, guildId);
 
-        const { member: robber } = await memberService.findOrCreate(robberId, guildId);
-        const { member: target } = await memberService.findOrCreate(targetUser.id, guildId);
+        robber = await memberService.findOrCreate({
+            userId: robberId,
+            guildId
+        });
+
+        const target = await memberService.findOrCreate({
+            userId: targetUser.id,
+            guildId
+        });
 
         const success = Math.random() < SUCCESS_CHANCE;
-        const stolenAmount = Math.floor(target.coins * STEAL_PERCENTAGE);
+        const stolenAmount = Math.floor(target.guildPoints * STEAL_PERCENTAGE);
 
         if (success) {
-            await memberService.updateOrCreate(robberId, guildId, {
-                update: {
-                    coins: { increment: stolenAmount },
-                    lastRobAt: new Date()
-                },
-            });
+            db.$transaction(async (tx) => {
+                const ctx = Object.create(memberService, {
+                    model: { value: tx.member }
+                });
 
-            await memberService.updateOrCreate(targetUser.id, guildId, {
-                update: {
-                    coins: { decrement: stolenAmount },
-                },
+                await memberService.setLastRobedAt.call(ctx, {
+                    userId: robberId,
+                    guildId
+                });
+
+                await memberService.addGuildPoints.call(ctx, {
+                    userId: robberId,
+                    guildId,
+                    amount: stolenAmount
+                });
+
+                await memberService.removeGuildPoints.call(ctx, {
+                    userId: targetUser.id,
+                    guildId,
+                    amount: stolenAmount
+                });
             });
 
             return interaction.reply({
@@ -124,30 +145,32 @@ export default new Command({
                 ],
             });
         } else {
-            const totalAssets = robber.coins + robberBank.funds;
-            const penalty = Math.floor(totalAssets * 0.02);
 
-            let remainingPenalty = penalty;
+            throw Error('NOT FINISH : ROB')
+            // const totalAssets = robber.coins + robberBank.funds;
+            // const penalty = Math.floor(totalAssets * 0.02);
 
-            const coinsDecrement = Math.min(robber.coins, remainingPenalty);
-            remainingPenalty -= coinsDecrement;
+            // let remainingPenalty = penalty;
 
-            const bankDecrement = Math.min(robberBank.funds, remainingPenalty);
-            remainingPenalty -= bankDecrement;
+            // const coinsDecrement = Math.min(robber.coins, remainingPenalty);
+            // remainingPenalty -= coinsDecrement;
 
-            await memberService.updateOrCreate(robberId, guildId, {
-                update: {
-                    coins: { decrement: coinsDecrement },
-                    bank: {
-                        update: {
-                            funds: {
-                                decrement: bankDecrement
-                            }
-                        }
-                    },
-                    lastRobAt: new Date(),
-                },
-            });
+            // const bankDecrement = Math.min(robberBank.funds, remainingPenalty);
+            // remainingPenalty -= bankDecrement;
+
+            // await memberService.updateOrCreate(robberId, guildId, {
+            //     update: {
+            //         coins: { decrement: coinsDecrement },
+            //         bank: {
+            //             update: {
+            //                 funds: {
+            //                     decrement: bankDecrement
+            //                 }
+            //             }
+            //         },
+            //         lastRobAt: new Date(),
+            //     },
+            // });
 
             return interaction.reply({
                 embeds: [

@@ -1,22 +1,21 @@
 model Member {
-    userId  String
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
     guildId String
+    guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
-    user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-    guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+    activityXp  Int @default(0)
+    guildPoints Int @default(0)
 
-    xp                Int @default(0)
     messageCount      Int @default(0)
     voiceTotalMinutes Int @default(0)
-    coins             Int @default(0)
-
-    dailyStreak Int @default(0)
 
     lastDailyAt DateTime?
     lastWorkAt  DateTime?
     lastRobAt   DateTime?
 
-    bank MemberBank?
+    vault MemberVault?
 
     @@id([userId, guildId])
 }

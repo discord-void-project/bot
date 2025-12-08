@@ -3,7 +3,7 @@ import { defineConfig } from 'tsup'
 export default defineConfig({
     entry: [
         'src/**/**.ts',
-        '!src/database/core/*',
+        '!src/database/core/**',
         '!src/**/test.*'
     ],
     outDir: 'build',

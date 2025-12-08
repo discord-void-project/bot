@@ -11,7 +11,7 @@ model Blacklist {
     mod   User   @relation("Mod", fields: [modId], references: [id], onDelete: Cascade)
 
     status BlacklistStatus @default(PENDING)
-    reason      String?
+    reason String?
 
     guilds BlacklistGuild[]
 

@@ -7,10 +7,10 @@ import { ContainerUI } from '@/ui'
 import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
 import { getDominantColor, parseUserMention } from '@/utils'
 import { userService } from '@/database/services'
-import { UserFlags } from '@/database/utils'
+import { PrismaUserFlags } from '@/database/utils'
 
 const buildProfile = async (member: GuildMember) => {
-    const { emptyEmoji, lightGrayBulletEmoji, graySubEntryEmoji, yellowRectEmoji } = applicationEmojiHelper();
+    const { emptyEmoji, lightGrayBulletEmoji, graySubEntryEmoji } = applicationEmojiHelper();
 
     const helper = await guildMemberHelper(member, { fetchMember: true, fetchUser: true });
 
@@ -29,7 +29,7 @@ const buildProfile = async (member: GuildMember) => {
 
     const userDatabase = member.user.bot
         ? null
-        : await userService.find(member.id);
+        : await userService.findById(member.id);
 
     const userTagAssignedAt = userDatabase?.tagAssignedAt
         ? Math.floor(new Date(userDatabase.tagAssignedAt).getTime() / 1000)
@@ -72,15 +72,15 @@ const buildProfile = async (member: GuildMember) => {
         })
     );
 
-    if (member.user.bot || (userDatabase?.flags && userDatabase.flags.any([UserFlags.STAFF, UserFlags.BETA]))) {
+    if (member.user.bot || (userDatabase?.flags && userDatabase.flags.any([PrismaUserFlags.STAFF, PrismaUserFlags.BETA]))) {
         components.push(createSeparator());
 
         if (member.user.bot) {
             components.push(createTextDisplay('-# *Ce membre est un robot*'));
         } else if (userDatabase) {
-            if (userDatabase.flags.has(UserFlags.STAFF)) {
+            if (userDatabase.flags.has(PrismaUserFlags.STAFF)) {
                 components.push(createTextDisplay('-# *Ce membre est un staff du bot*'));
-            } else if (userDatabase.flags.has(UserFlags.BETA)) {
+            } else if (userDatabase.flags.has(PrismaUserFlags.BETA)) {
                 components.push(createTextDisplay('-# *Ce membre est bêta-testeur du bot*'));
             }
         }

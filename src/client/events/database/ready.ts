@@ -1,7 +1,7 @@
 import { Event } from '@/structures'
 
+import db from '@/database/db'
 import { userService } from '@/database/services'
-import db from '@/database/db';
 
 const LUNARIA_GUILD_ID = '1280087771540623413';
 const REWARD_ROLE_ID = '1301111729182216345';

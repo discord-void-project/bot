@@ -27,7 +27,7 @@ const buildProgression = async (member: GuildMember) => {
 
             const { current, required } = getXpProgress(memberDatabase.xp);
 
-            const user = await userService.find(member.id);
+            const user = await userService.findById(member.id);
 
             const ratio = user?.tagAssignedAt
                 ? dateElapsedRatio(new Date(user.tagAssignedAt), 14)

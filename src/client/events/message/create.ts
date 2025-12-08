@@ -4,8 +4,9 @@ import {
     guildIgnoredChannelService,
     guildLevelRewardService,
     guildSettingsService,
-    memberService
+    userService,
 } from '@/database/services'
+import { memberService } from '@/database/services/v2/member'
 
 import { levelUpCard } from '@/ui/assets/cards/levelUpCard'
 
@@ -64,22 +65,11 @@ export default new Event({
             });
         }
 
-        const member = await memberService.updateOrCreate(userId, guildId, {
-            update: {
-                messageCount: {
-                    increment: 1
-                }
-            },
-            create: {
-                messageCount: 1
-            },
-            include: {
-                user: true
-            }
-        });
+        const user = await userService.findById(userId);
+        const member = await memberService.incrementMessageCount({ userId, guildId });
 
-        const ratio = member.user?.tagAssignedAt
-            ? dateElapsedRatio(new Date(member.user.tagAssignedAt), 14)
+        const ratio = user?.tagAssignedAt
+            ? dateElapsedRatio(new Date(user.tagAssignedAt), 14)
             : 0;
 
         const tagBoostValue = ratio ? 1 + (ratio * MAX_TAG_BOOST) : 1;
@@ -102,16 +92,11 @@ export default new Event({
 
                         const randomCoins = Math.floor((Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain) * tagBoostValue);
 
-                        await memberService.updateOrCreate(userId, guildId, {
-                            create: {
-                                coins: randomCoins
-                            },
-                            update: {
-                                coins: {
-                                    increment: randomCoins
-                                }
-                            }
-                        })
+                        await memberService.addGuildPoints({
+                            userId,
+                            guildId,
+                            amount: randomCoins
+                        });
                     }
                 }
             }
@@ -128,8 +113,8 @@ export default new Event({
 
                         const randomXP = Math.floor((Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain) * tagBoostValue);
 
-                        const currentLevel = xpToLevel(member.xp);
-                        const newXP = member.xp + randomXP;
+                        const currentLevel = xpToLevel(member.activityXp);
+                        const newXP = member.activityXp + randomXP;
                         const newLevel = xpToLevel(newXP);
 
                         reachLevelMax = progressionSettings.maxLevel && newLevel >= progressionSettings.maxLevel;
@@ -137,9 +122,17 @@ export default new Event({
                         if (reachLevelMax) {
                             const amount = levelToXp(progressionSettings.maxLevel);
 
-                            await memberService.setXp(userId, guildId, amount);
+                            await memberService.setActivityXp({
+                                userId,
+                                guildId,
+                                value: amount
+                            });
                         } else {
-                            await memberService.addXp(userId, guildId, randomXP);
+                            await memberService.addActivityXp({
+                                userId,
+                                guildId,
+                                amount: randomXP
+                            });
                         }
 
                         if (newLevel > currentLevel) {

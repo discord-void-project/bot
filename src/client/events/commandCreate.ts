@@ -8,7 +8,7 @@ import {
 import { Event } from '@/structures'
 
 import db from '@/database/db'
-import { UserFlags } from '@/database/utils/UserFlags'
+import { PrismaUserFlags } from '@/database/utils'
 
 import { EmbedUI } from '@/ui/EmbedUI'
 
@@ -133,11 +133,11 @@ export default new Event({
                     }
 
                     if (userDatabase && !isDeveloper) {
-                        if (access.user?.isStaff && !userDatabase.flags.has(UserFlags.STAFF)) {
+                        if (access.user?.isStaff && !userDatabase.flags.has(PrismaUserFlags.STAFF)) {
                             return await replyAuthorizationRefused(`Cette commande est accessible uniquement aux personnes ayant une haute autorité`);
                         }
 
-                        if (access.user?.isBetaTester && !userDatabase.flags.has(UserFlags.BETA)) {
+                        if (access.user?.isBetaTester && !userDatabase.flags.has(PrismaUserFlags.BETA)) {
                             return await replyAuthorizationRefused(`Cette commande est accessible uniquement aux bêta-testeurs`);
                         }
                     }

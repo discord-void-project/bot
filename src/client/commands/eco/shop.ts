@@ -1,7 +1,9 @@
 import { Command } from '@/structures/Command'
 import { ButtonInteraction, GuildMember, MessageFlags } from 'discord.js'
 
-import { memberService, shopItemService, userService } from '@/database/services'
+import { userService, shopItemService } from '@/database/services'
+import { memberService } from '@/database/services/v2/member'
+
 import { mainGuildConfig } from '@/client/config'
 
 import { createActionRow, createButton, createSeparator, createStringSelectMenu, createTextDisplay } from '@/ui/components/common'
@@ -47,19 +49,17 @@ export default new Command({
         const itemsPerPage = 5;
         const maxPages = Math.ceil(allItems.length / itemsPerPage);
 
-        const getMemberBalance = async () => {
-            const { member: memberRecord } = await memberService.findOrCreate(interaction.user.id, interaction.guild.id) ?? {
-                memberRecord: {
-                    coins: 0,
-                }
-            };
+        const userId = interaction.user.id;
+        const guildId = interaction.guild.id;
 
+        const getMemberBalance = async () => {
+            const member = await memberService.findOrCreate({ userId, guildId });
             const memberBank = await memberBankService.findOrCreate(interaction.user.id, interaction.guild.id);
 
             return {
-                coins: memberRecord.coins,
+                coins: member.guildPoints,
                 bank: memberBank.funds,
-                total: memberRecord.coins + memberBank.funds
+                total: member.guildPoints + memberBank.funds
             }
         }
 
@@ -234,31 +234,33 @@ export default new Command({
                     ]
                 });
 
-                try {
-                    const confirm = await msg.awaitMessageComponent({
-                        filter: ($i) => $i.user.id === i.user.id,
-                        time: 15_000,
-                    });
+                throw Error('NOT FINISH')
 
-                    if (confirm.customId === '#confirm') {
-                        await memberService.pay(member.user.id, member.guild.id, item.cost, {
-                            coins: true,
-                            bank: true
-                        });
+                // try {
+                //     const confirm = await msg.awaitMessageComponent({
+                //         filter: ($i) => $i.user.id === i.user.id,
+                //         time: 15_000,
+                //     });
 
-                        for (const item of allItems.filter((f) => member.roles.cache.has(f.roleId))) {
-                            await member.roles.remove(item.roleId);
-                        }
+                //     if (confirm.customId === '#confirm') {
+                //         await memberService.pay(member.user.id, member.guild.id, item.cost, {
+                //             coins: true,
+                //             bank: true
+                //         });
 
-                        await member.roles.add(item.roleId);
-                    }
-                } catch (ex) {
-                    // 
-                } finally {
-                    return await msg.edit({
-                        components: await generateComponents(currentPage)
-                    });
-                }
+                //         for (const item of allItems.filter((f) => member.roles.cache.has(f.roleId))) {
+                //             await member.roles.remove(item.roleId);
+                //         }
+
+                //         await member.roles.add(item.roleId);
+                //     }
+                // } catch (ex) {
+                //     // 
+                // } finally {
+                //     return await msg.edit({
+                //         components: await generateComponents(currentPage)
+                //     });
+                // }
             }
         });
 

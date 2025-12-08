@@ -1,7 +1,7 @@
 import { Command } from '@/structures/Command'
 import { ApplicationCommandOptionType, GuildMember } from 'discord.js'
 
-import { memberService } from '@/database/services'
+import { memberService } from '@/database/services/v2/member'
 
 import { EmbedUI } from '@/ui/EmbedUI'
 
@@ -16,9 +16,10 @@ const buildEmbed = async (member: GuildMember) => {
     const guildId = member.guild.id;
 
     const memberHelper = await guildMemberHelper(member, { fetchAll: true });
-    const memberDatabase = await memberService.find(userId, guildId) ?? {
-        coins: 0,
+    const memberDatabase = await memberService.findById({ userId, guildId }) ?? {
+        activityXp: 0,
     };
+    
     const memberBank = await memberBankService.find(userId, guildId) ?? {
         funds: 0,
         maxCapacity: tierCapacity['TIER_0']
@@ -35,7 +36,7 @@ const buildEmbed = async (member: GuildMember) => {
                 name: '🪙 Coins',
                 value: [
                     `${yellowSubEntryEmoji} 🏦 Banque ${yellowArrowEmoji} **${formatCompactNumber(memberBank.funds)}** / **${formatCompactNumber(memberBank.maxCapacity)}**`,
-                    `${yellowSubEntryEmoji} 💶 Poche ${yellowArrowEmoji} **${formatCompactNumber(memberDatabase.coins)}**`
+                    `${yellowSubEntryEmoji} 💶 Poche ${yellowArrowEmoji} **${formatCompactNumber(memberDatabase.activityXp)}**`
                 ].join('\n')
             },
         ],

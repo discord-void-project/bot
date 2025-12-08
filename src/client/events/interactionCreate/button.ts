@@ -1,7 +1,7 @@
 import { Event } from '@/structures'
 
 import { BlacklistStatus } from '@/database/core/enums'
-import { guildService } from '@/database/services'
+import { blacklistGuildService, blacklistService } from '@/database/services'
 
 import { EmbedUI } from '@/ui/EmbedUI'
 
@@ -11,7 +11,7 @@ export default new Event({
         if (interaction.customId.startsWith('accept_')) {
             const userId = interaction.customId.split('_').pop() as string;
 
-            let blacklist = await guildService.findUser(userId);
+            let blacklist = await blacklistService.findById(userId);
             if (!blacklist) {
                 return await interaction.message.edit({
                     content: null,
@@ -27,7 +27,7 @@ export default new Event({
                 });
             }
 
-            blacklist = await guildService.updateBlacklistStatus(userId, BlacklistStatus.ACCEPTED);
+            blacklist = await blacklistService.updateState(userId, BlacklistStatus.ACCEPTED);
 
             this.client.emit('blacklistAccepted', blacklist);
 
@@ -50,7 +50,7 @@ export default new Event({
         } else if (interaction.customId.startsWith('refuse_')) {
             const userId = interaction.customId.split('_').pop() as string;
 
-            const blacklist = await guildService.findUser(userId);
+            const blacklist = await blacklistService.findById(userId);
             if (!blacklist) {
                 return await interaction.message.edit({
                     content: null,
@@ -66,7 +66,7 @@ export default new Event({
                 });
             }
 
-            await guildService.removeBlacklist(userId);
+            await blacklistService.remove(userId);
 
             return await interaction.message.edit({
                 content: "Okaay ça marche, j'annule la blacklist",
@@ -88,7 +88,10 @@ export default new Event({
             const userId = interaction.customId.split('_').pop() as string;
 
             await interaction.guild!.bans.remove(userId, `Dérogation de ${interaction.user.username}`);
-            await guildService.authorizeUserGuildBlacklist(interaction.guild!.id, userId);
+            await blacklistGuildService.authorize({
+                guildId: interaction.guild!.id,
+                userId
+            });
 
             return await interaction.message.edit({
                 content: "J'ai autorisé l'utilisateur a rejoindre, je la bannerai plus :)",

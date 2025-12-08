@@ -1,6 +1,6 @@
 import { Command } from '@/structures/Command'
 
-import { memberService } from '@/database/services'
+import { memberService } from '@/database/services/v2/member'
 import { mainGuildConfig } from '@/client/config'
 import { formatCompactNumber } from '@/utils'
 import { EmbedUI } from '@/ui/EmbedUI'
@@ -20,9 +20,9 @@ const handleDepositCommand = async ({
     amountInput,
     reply,
 }: HandleDepositContext) => {
-    const { member } = await memberService.findOrCreate(userId, guildId);
+    const member = await memberService.findOrCreate({ userId, guildId });
 
-    if (member.coins < 1) {
+    if (member.guildPoints < 1) {
         return await reply({
             embeds: [
                 EmbedUI.createMessage(`❌ Vous n'avez rien à déposer en banque !`, { color: 'red' })
@@ -33,9 +33,9 @@ const handleDepositCommand = async ({
     let amount: number;
 
     if (amountInput.toLowerCase() === 'all') {
-        amount = member.coins;
+        amount = member.guildPoints;
     } else {
-        amount = Math.min(member.coins, parseInt(amountInput));
+        amount = Math.min(member.guildPoints, parseInt(amountInput));
         if (isNaN(amount) || amount <= 0) {
             return await reply({
                 embeds: [
@@ -45,13 +45,13 @@ const handleDepositCommand = async ({
         }
     }
 
-    if (member.coins < amount) {
+    if (member.guildPoints < amount) {
         return await reply({
             embeds: [
                 EmbedUI.createMessage({
                     color: 'red',
                     title: '❌ Fonds insuffisants',
-                    description: `Tu n'as que **${member.coins}** pièces dans ton portefeuille.`,
+                    description: `Tu n'as que **${member.guildPoints}** pièces dans ton portefeuille.`,
                 })
             ],
         });
@@ -72,18 +72,18 @@ const handleDepositCommand = async ({
         }
     }
 
-    await memberService.updateOrCreate(userId, guildId, {
-        update: {
-            coins: { decrement: amount },
-            bank: {
-                update: {
-                    funds: {
-                        increment: amount
-                    }
-                }
-            },
-        },
-    });
+    // await memberService.createOrUpdate(userId, guildId, {
+    //     update: {
+    //         coins: { decrement: amount },
+    //         bank: {
+    //             update: {
+    //                 funds: {
+    //                     increment: amount
+    //                 }
+    //             }
+    //         },
+    //     },
+    // });
 
     return await reply({
         embeds: [

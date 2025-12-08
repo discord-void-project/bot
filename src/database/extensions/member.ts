@@ -5,9 +5,9 @@ export const memberExtension = Prisma.defineExtension({
     result: {
         member: {
             level: {
-                needs: { xp: true },
-                compute({ xp }) {
-                    return xpToLevel(xp);
+                needs: { activityXp: true },
+                compute({ activityXp }) {
+                    return xpToLevel(activityXp);
                 },
             },
         },

@@ -93,7 +93,7 @@ const pay = async (
 
     let remaining = amount;
 
-    let coins = member.coins ?? 0;
+    let coins = member.guildPoints ?? 0;
     let bank = bankData.funds ?? 0;
 
     if (useCoins && coins >= remaining) {
@@ -145,42 +145,42 @@ const pay = async (
     return updatedMember;
 };
 
-const addXp = async (userId: string, guildId: string, amount: number) => {
-    return await memberService.updateOrCreate(userId, guildId, {
-        create: {
-            xp: amount
-        },
-        update: {
-            xp: {
-                increment: amount
-            }
-        }
-    })
-}
+// const addXp = async (userId: string, guildId: string, amount: number) => {
+//     return await memberService.updateOrCreate(userId, guildId, {
+//         create: {
+//             xp: amount
+//         },
+//         update: {
+//             xp: {
+//                 increment: amount
+//             }
+//         }
+//     })
+// }
 
-const removeXp = async (userId: string, guildId: string, amount: number) => {
-    return await memberService.updateOrCreate(userId, guildId, {
-        create: {
-            xp: amount
-        },
-        update: {
-            xp: {
-                decrement: amount
-            }
-        }
-    })
-}
+// const removeXp = async (userId: string, guildId: string, amount: number) => {
+//     return await memberService.updateOrCreate(userId, guildId, {
+//         create: {
+//             xp: amount
+//         },
+//         update: {
+//             xp: {
+//                 decrement: amount
+//             }
+//         }
+//     })
+// }
 
-const setXp = async (userId: string, guildId: string, amount: number) => {
-    return await memberService.updateOrCreate(userId, guildId, {
-        create: {
-            xp: amount
-        },
-        update: {
-            xp: amount
-        }
-    })
-}
+// const setXp = async (userId: string, guildId: string, amount: number) => {
+//     return await memberService.updateOrCreate(userId, guildId, {
+//         create: {
+//             xp: amount
+//         },
+//         update: {
+//             xp: amount
+//         }
+//     })
+// }
 
 export const memberService = {
     find,
@@ -188,7 +188,7 @@ export const memberService = {
     findOrCreate,
     remove,
     pay,
-    addXp,
-    removeXp,
-    setXp
+    // addXp,
+    // removeXp,
+    // setXp
 }
