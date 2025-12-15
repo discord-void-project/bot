@@ -4,7 +4,7 @@ import { xpToLevel } from '@/utils/math'
 export const memberExtension = Prisma.defineExtension({
     result: {
         member: {
-            level: {
+            activityLevel: {
                 needs: { activityXp: true },
                 compute({ activityXp }) {
                     return xpToLevel(activityXp);

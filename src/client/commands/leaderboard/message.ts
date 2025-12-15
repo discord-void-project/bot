@@ -13,8 +13,8 @@ const buildEmbed = async (member: GuildMember) => {
     const guild = member.guild;
 
     const rankers = (await db.member.findMany({
-        where: { guildId: guild.id, voiceTotalMinutes: { gt: 0 } }
-    })).sort((a,b) => b.voiceTotalMinutes - a.voiceTotalMinutes);
+        where: { guildId: guild.id, messageCount: { gt: 0 } }
+    })).sort((a,b) => b.messageCount - a.messageCount);
 
     if (!rankers.length) {
         return EmbedUI.createMessage('Aucune donnée', { color: 'orange' })
@@ -39,11 +39,11 @@ const buildEmbed = async (member: GuildMember) => {
             const isAuthor = r.userId === userId;
             const name = memberHelper.getName({ safe: true })
 
-            return `- ${place} ${isAuthor ? `**\`${name}\`**` : `\`${name}\``} ${whiteArrowEmoji} **${r.voiceTotalMinutes.toLocaleString('en')}** minutes en vocal`;
+            return `- ${place} ${isAuthor ? `**\`${name}\`**` : `\`${name}\``} ${whiteArrowEmoji} **${r.messageCount.toLocaleString('en')}** messages`;
         }).join('\n');
 
     const leaderboardIndex = rankers.findIndex(r => r.userId === userId);
-    const totalVocalMinutes = rankers.reduce((sum, r) => sum + r.voiceTotalMinutes, 0);
+    const totalMessageSents = rankers.reduce((sum, r) => sum + r.messageCount, 0);
 
     const guildIcon = guild.iconURL();
     const guildIconDominantColor = guildIcon ? await getDominantColor(guildIcon) : undefined;
@@ -51,14 +51,14 @@ const buildEmbed = async (member: GuildMember) => {
     const memberHelper = guildMemberHelperSync(member);
 
     return EmbedUI.create({
-        title: `Classement des plus actif en vocal de ${escapeAllMarkdown(guild.name)}`,
+        title: `Classement des plus bavards de ${escapeAllMarkdown(guild.name)}`,
         color: guildIconDominantColor,
         thumbnail: guildIcon ? { url: guildIcon } : undefined,
         description: [
-            `> 🔊 **${totalVocalMinutes.toLocaleString('en')}** minutes de vocal cumulé sur le serveur`,
+            `> 💬 **${totalMessageSents.toLocaleString('en')}** messages cumulés sur le serveur`,
             topMembersMap.size < 10 ? `***TOP ${topMembersMap.size}***` : `***TOP 10 sur ${rankers.length.toLocaleString('en')} membres***`,
             top,
-            leaderboardIndex >= 10 ? `- **..${leaderboardIndex + 1}** **\`${memberHelper.getName({ safe: true })}\`** ${whiteArrowEmoji} **${rankers[leaderboardIndex].voiceTotalMinutes.toLocaleString('en')}** minutes en vocal` : ''
+            leaderboardIndex >= 10 ? `- **..${leaderboardIndex + 1}** **\`${memberHelper.getName({ safe: true })}\`** ${whiteArrowEmoji} **${rankers[leaderboardIndex].messageCount.toLocaleString('en')}** messages` : ''
         ].join('\n'),
         timestamp: Date.now()
     });
@@ -66,15 +66,15 @@ const buildEmbed = async (member: GuildMember) => {
 
 export default new Command({
     nameLocalizations: {
-        fr: 'vocal'
+        fr: 'message'
     },
-    description: "🏆 Shows the top members by time spent in voice chat",
+    description: "🏆 Shows the top members by messages sent",
     descriptionLocalizations: {
-        fr: "🏆 Affiche le classement des meilleurs membres par temps passé en vocal"
+        fr: "🏆 Affiche le classement des meilleurs membres par message envoyés"
     },
     messageCommand: {
         style: 'flat',
-        aliases: [ 'topvoice', 'tvoice' ],
+        aliases: [ 'ttext', 'toptext' ],
     },
     async onInteraction(interaction) {
         await interaction.deferReply();

@@ -3,7 +3,7 @@ import cron from 'node-cron'
 import client from '../instance'
 
 import { guildLevelRewardService, guildSettingsService, userService } from '@/database/services'
-import { memberService } from '@/database/services/v2/member'
+import { memberService } from '@/database/services/member'
 import { guildMemberHelper } from '@/helpers'
 
 import logger from '@/utils/logger'
@@ -49,7 +49,7 @@ cron.schedule('* * * * *', async () => {
                     const minGain = eco.voiceMinGain;
                     const randomCoins = Math.floor((Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain) * tagBoostValue);
                     
-                    await memberService.addGuildPoints({
+                    await memberService.addGuildCoins({
                         userId,
                         guildId,
                         amount: randomCoins,
@@ -114,7 +114,9 @@ cron.schedule('* * * * *', async () => {
                                         attachment: await levelUpCard({
                                             username: memberHelper.getName() ?? 'unknown',
                                             avatarURL: memberHelper.getAvatarURL(),
-                                            accentColor: guildMember.roles.color?.hexColor ?? await getDominantColor(memberHelper.getAvatarURL(), false),
+                                            accentColor: guildMember.roles.color?.hexColor ?? await getDominantColor(memberHelper.getAvatarURL(), {
+                                                returnRGB: false
+                                            }),
                                             newLevel: displayLevel,
                                         }),
                                         name: 'levelUpCard.png'

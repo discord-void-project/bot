@@ -2,7 +2,7 @@ import { Command } from '@/structures/Command'
 import { ButtonInteraction, GuildMember, MessageFlags } from 'discord.js'
 
 import { userService, shopItemService } from '@/database/services'
-import { memberService } from '@/database/services/v2/member'
+import { memberService } from '@/database/services/member'
 
 import { mainGuildConfig } from '@/client/config'
 
@@ -57,9 +57,9 @@ export default new Command({
             const memberBank = await memberBankService.findOrCreate(interaction.user.id, interaction.guild.id);
 
             return {
-                coins: member.guildPoints,
+                coins: member.guildCoins,
                 bank: memberBank.funds,
-                total: member.guildPoints + memberBank.funds
+                total: member.guildCoins + memberBank.funds
             }
         }
 

@@ -5,47 +5,51 @@ import { memberService } from '@/database/services'
 
 import { EmbedUI } from '@/ui'
 
-import { parseUserMention } from '@/utils'
+import { getDominantColor, parseUserMention } from '@/utils'
 import { guildMemberHelper } from '@/helpers'
 
-const buildStats = async (member: GuildMember) => {
-    const memberHelper = await guildMemberHelper(member, { fetchAll: true });
+const createStatField = (label: string, value: any, inline = false) => ({
+    name: label,
+    value,
+    inline
+});
 
-    const memberDatabase = await memberService.find(member.id, member.guild.id) ?? {
-        messageCount: 0,
-        voiceTotalMinutes: 0
-    };
+const formatTime = (minutes: number) => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
 
-    const formatTime = (time: number) => {
-        if (time >= 60) {
-            const hours = Math.floor(time / 60);
-            const minutes = time % 60;
-            return minutes > 0
-                ? `**${hours}** heures et **${minutes}** minutes`
-                : `**${hours}** heures`;
-        } else {
-            return `**${time}** minutes`;
-        }
-    }
+    return h > 0
+        ? m > 0
+            ? `**${h.toLocaleString('en')}** heures et **${m}** minutes`
+            : `**${h.toLocaleString('en')}** heures`
+        : `**${m}** minutes`;
+};
+
+const buildEmbed = async (member: GuildMember) => {
+    const [memberHelper, memberDatabase] = await Promise.all([
+        guildMemberHelper(member, { fetchAll: true }),
+        memberService.findById({ userId: member.id, guildId: member.guild.id })
+    ]);
+
+    const memberAvatarDominantColor = await getDominantColor(memberHelper.getAvatarURL());
+
+    const { messageCount = 0, voiceTotalMinutes = 0 } = memberDatabase ?? {};
 
     return EmbedUI.create({
-        color: 'indigo',
+        color: memberAvatarDominantColor,
+        description: `> 💡 Voici un résumé de votre activité sur le serveur !`,
         thumbnail: {
             url: memberHelper.getAvatarURL()
         },
-        title: `Stats de ${memberHelper.getName()}`,
+        title: `${memberHelper.getName({ safe: true })} — Serveur Stats`,
         fields: [
-            {
-                name: '💬 Messages envoyés',
-                value: `**${memberDatabase.messageCount}**`,
-                inline: true,
-            },
-            {
-                name: '🔊 Minutes en vocal',
-                value: `${formatTime(memberDatabase.voiceTotalMinutes)}`,
-                inline: true,
-            },
+            createStatField('💬 Messages envoyés', messageCount ? `**${messageCount.toLocaleString('en')}**` : 'Aucun message envoyé'),
+            createStatField('🔊 Temps en vocal', voiceTotalMinutes ? formatTime(voiceTotalMinutes) : 'Aucun temps passé en vocal'),
         ],
+        footer: {
+            iconURL: member.guild.iconURL() ?? undefined,
+            text: member.guild.name,
+        },
         timestamp: Date.now()
     });
 }
@@ -75,17 +79,17 @@ export default new Command({
 
         return await interaction.reply({
             allowedMentions: {},
-            embeds: [await buildStats(member)],
+            embeds: [await buildEmbed(member)],
         });
     },
     async onMessage(message, { args: [userId] }) {
-        const member = userId
+        const member = (userId
             ? message.guild.members.cache.get(parseUserMention(userId) ?? userId) ?? message.member
-            : message.member;
+            : message.member) as GuildMember;
 
         return await message.reply({
             allowedMentions: {},
-            embeds: [await buildStats(member as GuildMember)],
+            embeds: [await buildEmbed(member as GuildMember)],
         });
     }
 });

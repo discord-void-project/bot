@@ -19,14 +19,16 @@ const handleWorkCommand = async ({
     username,
     reply
 }: HandleWorkContext) => {
-    const { member } = await memberService.findOrCreate(userId, guildId);
+    const memberKey = { userId, guildId }
+
+    const member = await memberService.findOrCreate(memberKey);
     const ecoSettings = await guildSettingsService.findOrCreate(guildId, 'eco');
 
     const COOLDOWN = (ecoSettings.workCooldown ?? 30) * 60 * 1000;
     const MIN_REWARD = ecoSettings.workMinGain ?? 25;
     const MAX_REWARD = ecoSettings.workMaxGain ?? 75;
 
-    const { isActive, expireTimestamp } = createCooldown(member.lastWorkAt, COOLDOWN);
+    const { isActive, expireTimestamp } = createCooldown(member.lastWorkedAt, COOLDOWN);
     const now = Date.now();
 
     if (isActive) {
@@ -59,12 +61,8 @@ const handleWorkCommand = async ({
         phraseBonus = `✨ Aujourd'hui, vous avez un petit bonus de **${bonus} pièces** !`;
     }
 
-    await memberService.updateOrCreate(userId, guildId, {
-        update: {
-            coins: { increment: reward },
-            lastWorkAt: new Date(),
-        },
-    });
+    await memberService.setLastWorkedAt(memberKey);
+    await memberService.addGuildCoins(memberKey, reward);
 
     const phrases = [
         `Bravo ! Vous avez travaillé dur aujourd'hui et gagné **${reward} pièces** !`,
@@ -86,12 +84,12 @@ const handleWorkCommand = async ({
 };
 
 export default new Command({
-    description: 'work to earn daily coins',
+    description: '👷 Work to earn daily server coins',
     nameLocalizations: {
         fr: 'travail',
     },
     descriptionLocalizations: {
-        fr: "travail pour gagner des pièces quotidiennement"
+        fr: '👷 Travail pour gagner des pièces de serveur quotidiennement'
     },
     messageCommand: {
         style: 'flat',

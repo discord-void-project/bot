@@ -24,7 +24,7 @@ model MemberVault {
     capacityTier MemberVaultCapacityTier @default(TIER_0)
     securityTier MemberVaultSecurityTier @default(TIER_0)
 
-    guildPoints Int @default(0)
+    guildCoins Int @default(0)
 
     @@id([userId, guildId])
     @@map("member_bank")

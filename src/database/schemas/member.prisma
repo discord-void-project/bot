@@ -6,14 +6,19 @@ model Member {
     guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
     activityXp  Int @default(0)
-    guildPoints Int @default(0)
+    guildCoins Int @default(0)
 
     messageCount      Int @default(0)
     voiceTotalMinutes Int @default(0)
 
-    lastDailyAt DateTime?
-    lastWorkAt  DateTime?
-    lastRobAt   DateTime?
+    dailyStreak Int @default(0)
+
+    lastAttendedAt DateTime?
+    lastWorkedAt   DateTime?
+    lastRobbedAt   DateTime?
+    lastRobAt      DateTime?
+    lastHeistAt    DateTime?
+    lastHeistedAt  DateTime?
 
     vault MemberVault?
 

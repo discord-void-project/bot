@@ -6,7 +6,6 @@ import logger from '@/utils/logger'
 import {
     userExtension,
     memberExtension,
-    memberBankExtension
 } from './extensions'
 
 const adapter = new PrismaMariaDb({
@@ -19,8 +18,7 @@ const adapter = new PrismaMariaDb({
 
 const prisma = new PrismaClient({ adapter })
     .$extends(userExtension)
-    .$extends(memberExtension)
-    .$extends(memberBankExtension);
+    .$extends(memberExtension);
 
 export default Object.assign(prisma, {
     adapter,

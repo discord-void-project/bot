@@ -15,7 +15,7 @@ import { EmbedUI } from '@/ui/EmbedUI'
 const replyBy = async (interaction: Message | ChatInputCommandInteraction, payload: BaseMessageOptions) => {
     try {
         if (interaction instanceof ChatInputCommandInteraction) {
-            return await interaction.reply(payload);
+            return await interaction[interaction.deferred ? 'editReply' : 'reply'](payload);
         } else if (interaction instanceof Message && interaction.channel.isSendable()) {
             return await interaction.reply(payload);
         }

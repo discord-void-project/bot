@@ -8,6 +8,7 @@ export * from './blacklist'
 export * from './blacklist-guild'
 // Member
 export * from './member'
+export * from './member-vault'
 export * from './member-bank-service'
 // Others
 export * from './shop-item'

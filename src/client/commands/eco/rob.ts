@@ -1,15 +1,18 @@
-import { Command } from '@/structures/Command'
 import { ApplicationCommandOptionType, MessageFlags } from 'discord.js'
+import { Command } from '@/structures/Command'
 
-import { memberService } from '@/database/services/v2/member'
-import { mainGuildConfig } from '@/client/config'
+import db from '@/database/db'
+import { memberService } from '@/database/services'
+
 import { createCooldown } from '@/utils'
 import { EmbedUI } from '@/ui/EmbedUI'
-import { memberBankService } from '@/database/services/member-bank-service'
-import db from '@/database/db'
+
+import { mainGuildConfig } from '@/client/config'
 
 const SUCCESS_CHANCE = 0.3;
 const STEAL_PERCENTAGE = 0.20;
+const ROB_COOLDOWN = 60 * 60 * 1000;
+const ROBBED_COOLDOWN = 3 * 60 * 60 * 1000;
 
 export default new Command({
     nameLocalizations: {
@@ -48,7 +51,12 @@ export default new Command({
     async onInteraction(interaction) {
         const targetUser = interaction.options.getUser('target', true);
         const robberId = interaction.user.id;
-        const guildId = interaction.guild!.id;
+        const guildId = interaction.guild.id;
+
+        const robberKey = {
+            userId: robberId,
+            guildId,
+        }
 
         if (targetUser.bot) {
             return interaction.reply({
@@ -74,17 +82,11 @@ export default new Command({
             });
         }
 
-        let robber = await memberService.findOrCreate({
-            userId: robberId,
-            guildId
-        });
+        let robber = await memberService.findOrCreate(robberKey);
 
-        const COOLDOWN = 60 * 60 * 1000;
-
-        const { isActive } = createCooldown(robber.lastRobAt, COOLDOWN);
-
-        if (isActive) {
-            return interaction.reply({
+        const { isActive: canRob } = createCooldown(robber.lastRobAt, ROB_COOLDOWN);
+        if (canRob) {
+            return await interaction.reply({
                 embeds: [
                     EmbedUI.createMessage({
                         color: 'red',
@@ -96,46 +98,58 @@ export default new Command({
             });
         }
 
-        const robberBank = await memberBankService.findOrCreate(robberId, guildId);
+        // const robberVault = await memberBankService.findOrCreate(robberId, guildId);
 
-        robber = await memberService.findOrCreate({
-            userId: robberId,
-            guildId
-        });
-
-        const target = await memberService.findOrCreate({
+        const targetKey = {
             userId: targetUser.id,
             guildId
-        });
+        }
 
-        const success = Math.random() < SUCCESS_CHANCE;
-        const stolenAmount = Math.floor(target.guildPoints * STEAL_PERCENTAGE);
+        const target = await memberService.findOrCreate(targetKey);
+
+        if (!target.guildCoins) {
+            return await interaction.reply({
+                embeds: [
+                    EmbedUI.createMessage({
+                        color: 'orange',
+                        description: `Cette personne n'a pas l'air riche, je devrais changer de cible`,
+                    }),
+                ],
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        const { isActive: isAlreadyRobbed } = createCooldown(target.lastRobbedAt, ROBBED_COOLDOWN);
+        if (isAlreadyRobbed) {
+            return await interaction.reply({
+                embeds: [
+                    EmbedUI.createMessage({
+                        color: 'orange',
+                        description: `Mhhh.. On dirait bien que cette personne es vigilante, essayons plus tard 🤔`,
+                    }),
+                ],
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        const success = Math.random() < (SUCCESS_CHANCE);
+
+        await memberService.setLastRobAt(robberKey);
+        await memberService.setLastRobbedAt(targetKey);
 
         if (success) {
-            db.$transaction(async (tx) => {
+            const stolenAmount = Math.floor(target.guildCoins * STEAL_PERCENTAGE);
+
+            await db.$transaction(async (tx) => {
                 const ctx = Object.create(memberService, {
                     model: { value: tx.member }
                 });
 
-                await memberService.setLastRobedAt.call(ctx, {
-                    userId: robberId,
-                    guildId
-                });
-
-                await memberService.addGuildPoints.call(ctx, {
-                    userId: robberId,
-                    guildId,
-                    amount: stolenAmount
-                });
-
-                await memberService.removeGuildPoints.call(ctx, {
-                    userId: targetUser.id,
-                    guildId,
-                    amount: stolenAmount
-                });
+                await memberService.addGuildCoins.call(ctx, robberKey, stolenAmount);
+                await memberService.removeGuildCoins.call(ctx, targetKey, stolenAmount);
             });
 
-            return interaction.reply({
+            return await interaction.reply({
                 embeds: [
                     EmbedUI.createMessage({
                         color: 'green',
@@ -145,39 +159,17 @@ export default new Command({
                 ],
             });
         } else {
+            const { total } = await memberService.getTotalGuildCoins(robberKey);
+            const penalty = Math.floor(total * 0.02);
 
-            throw Error('NOT FINISH : ROB')
-            // const totalAssets = robber.coins + robberBank.funds;
-            // const penalty = Math.floor(totalAssets * 0.02);
-
-            // let remainingPenalty = penalty;
-
-            // const coinsDecrement = Math.min(robber.coins, remainingPenalty);
-            // remainingPenalty -= coinsDecrement;
-
-            // const bankDecrement = Math.min(robberBank.funds, remainingPenalty);
-            // remainingPenalty -= bankDecrement;
-
-            // await memberService.updateOrCreate(robberId, guildId, {
-            //     update: {
-            //         coins: { decrement: coinsDecrement },
-            //         bank: {
-            //             update: {
-            //                 funds: {
-            //                     decrement: bankDecrement
-            //                 }
-            //             }
-            //         },
-            //         lastRobAt: new Date(),
-            //     },
-            // });
+            await memberService.removeGuildCoinsWithVault(robberKey, penalty);
 
             return interaction.reply({
                 embeds: [
                     EmbedUI.createMessage({
                         color: 'red',
                         title: '🚨 Vol échoué !',
-                        description: `Tu t'es fait attraper et tu perds **${coinsDecrement + bankDecrement}** pièces en amende !`,
+                        description: `Tu t'es fait attraper et tu perds **${penalty}** pièces en amende !`,
                     }),
                 ],
             });

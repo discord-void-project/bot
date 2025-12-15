@@ -1,43 +1,56 @@
-import { Command } from '@/structures/Command'
 import { ApplicationCommandOptionType, GuildMember } from 'discord.js'
+import { Command } from '@/structures/Command'
 
-import { memberService } from '@/database/services/v2/member'
+import {
+    memberService,
+    memberVaultService,
+    tierCapacity
+} from '@/database/services'
 
 import { EmbedUI } from '@/ui/EmbedUI'
 
-import { formatCompactNumber, parseUserMention } from '@/utils'
+import { formatCompactNumber, getDominantColor, parseUserMention } from '@/utils'
 import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
-import { memberBankService, tierCapacity } from '@/database/services/member-bank-service'
 
 const buildEmbed = async (member: GuildMember) => {
-    const { yellowSubEntryEmoji, yellowArrowEmoji } = applicationEmojiHelper();
+    const { whiteArrowEmoji } = applicationEmojiHelper();
 
     const userId = member.user.id;
     const guildId = member.guild.id;
 
+    const memberKey = {
+        userId,
+        guildId
+    }
+
     const memberHelper = await guildMemberHelper(member, { fetchAll: true });
-    const memberDatabase = await memberService.findById({ userId, guildId }) ?? {
-        activityXp: 0,
-    };
-    
-    const memberBank = await memberBankService.find(userId, guildId) ?? {
-        funds: 0,
-        maxCapacity: tierCapacity['TIER_0']
+    const memberAvatarDominantColor = await getDominantColor(memberHelper.getAvatarURL({ forceStatic: true }));
+
+    const memberGuildCoins = await memberService.getTotalGuildCoins(memberKey);
+    const memberVault = await memberVaultService.findById(memberKey) ?? {
+        capacityTier: 'TIER_0'
     };
 
+    const vaultGuildCoinsCapacity = tierCapacity[memberVault.capacityTier].guildCoins?.capacity;
+    
     return EmbedUI.createMessage({
-        color: 'yellow',
+        color: memberAvatarDominantColor,
         thumbnail: {
             url: memberHelper.getAvatarURL()
         },
         title: `Monnaies de ${memberHelper.getName()}`,
+        description: `-# 💡 Ici sont rassemblées toutes les monnaies que vous avez acquises au cours de votre progression.`,
         fields: [
             {
-                name: '🪙 Coins',
+                name: 'Pièces de Serveur',
                 value: [
-                    `${yellowSubEntryEmoji} 🏦 Banque ${yellowArrowEmoji} **${formatCompactNumber(memberBank.funds)}** / **${formatCompactNumber(memberBank.maxCapacity)}**`,
-                    `${yellowSubEntryEmoji} 💶 Poche ${yellowArrowEmoji} **${formatCompactNumber(memberDatabase.activityXp)}**`
-                ].join('\n')
+                    `- 🔐️ Coffre-Fort ${whiteArrowEmoji} **${formatCompactNumber(memberGuildCoins.inVault)}** / **${formatCompactNumber(vaultGuildCoinsCapacity)}**`,
+                    `- 💼 Solde ${whiteArrowEmoji} **${formatCompactNumber(memberGuildCoins.inWallet)}**`,
+                    (
+                        (formatCompactNumber(memberGuildCoins.inVault) != formatCompactNumber(memberGuildCoins.total))
+                        && (formatCompactNumber(memberGuildCoins.inWallet) != formatCompactNumber(memberGuildCoins.total))
+                    ) && `- ✨ Total ${whiteArrowEmoji} **${formatCompactNumber(memberGuildCoins.total)}**`,
+                ].filter(Boolean).join('\n')
             },
         ],
         timestamp: Date.now()
@@ -85,13 +98,15 @@ export default new Command({
         });
     },
     async onMessage(message, { args: [userId] }) {
-        const member = userId
-            ? message.guild.members.cache.get(parseUserMention(userId) ?? userId) ?? message.member
-            : message.member;
+        const member = (
+            userId
+                ? message.guild.members.cache.get(parseUserMention(userId) ?? userId) ?? message.member
+                : message.member
+        ) as GuildMember;
 
         return await message.reply({
             allowedMentions: {},
-            embeds: [await buildEmbed(member as GuildMember)],
+            embeds: [await buildEmbed(member)],
         });
     }
 });

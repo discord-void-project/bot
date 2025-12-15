@@ -1,35 +1,12 @@
-import { MemberBankTier } from '@/database/core/enums'
+import { MemberVaultCapacityTier } from '@/database/core/enums'
 import db from '@/database/db'
-
-export const tierCapacity = {
-	TIER_0: 50_000,
-	TIER_1: 75_000,
-	TIER_2: 150_000,
-	TIER_3: 225_000,
-	TIER_4: 300_000,
-	TIER_5: 375_000,
-	TIER_6: 450_000,
-	TIER_7: 525_000,
-	TIER_8: 600_000,
-}
-
-export const tierCost = {
-	TIER_0: 0,
-	TIER_1: 12_500,
-	TIER_2: 25_000,
-	TIER_3: 37_500,
-	TIER_4: 50_000,
-	TIER_5: 62_500,
-	TIER_6: 75_000,
-	TIER_7: 87_500,
-	TIER_8: 100_000,
-}
+import { tierCapacity, tierCapacityCost } from './member-vault'
 
 const find = async (
 	userId: string,
 	guildId: string,
 ) => {
-	return await db.memberBank.findUnique({
+	return await db.memberVault.findUnique({
 		where: {
 			userId_guildId: {
 				userId,
@@ -44,7 +21,7 @@ const updateOrCreate = async (
 	guildId: string,
 	data?: any
 ) => {
-	return await db.memberBank.upsert({
+	return await db.memberVault.upsert({
 		where: { userId_guildId: { userId, guildId } },
 		update: data?.update ?? {},
 		create: {
@@ -117,9 +94,9 @@ const setFunds = async (userId: string, guildId: string, amount: number) => {
 
 const getNextTier = async (userId: string, guildId: string) => {
 	const memberBank = await findOrCreate(userId, guildId);
-	const currentTier = memberBank.tier;
+	const currentTier = memberBank.capacityTier;
 
-	const tiers = Object.values(MemberBankTier);
+	const tiers = Object.values(MemberVaultCapacityTier);
 	const currentIndex = tiers.indexOf(currentTier);
 	const nextIndex = currentIndex + 1;
 
@@ -131,7 +108,7 @@ const getNextTier = async (userId: string, guildId: string) => {
 
 	return {
 		value: nextTier,
-		cost: tierCost[nextTier],
+		cost: tierCapacityCost[nextTier],
 		capacity: tierCapacity[nextTier],
 	};
 };

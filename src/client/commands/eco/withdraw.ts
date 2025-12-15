@@ -1,10 +1,9 @@
 import { Command } from '@/structures/Command'
 
-import { memberService } from '@/database/services'
+import { memberService, memberVaultService } from '@/database/services'
 import { mainGuildConfig } from '@/client/config'
 
 import { EmbedUI } from '@/ui/EmbedUI'
-import { memberBankService } from '@/database/services/member-bank-service';
 
 interface HandleWithdrawContext {
     userId: string;
@@ -20,73 +19,50 @@ const handleWithdrawCommand = async ({
     amountInput,
     reply
 }: HandleWithdrawContext) => {
-    const memberBank = await memberBankService.findOrCreate(userId, guildId);
+    const memberVault = await memberVaultService.findOrCreate({
+        userId,
+        guildId
+    });
     
-    if (memberBank.funds < 1) {
+    if (memberVault.guildCoins <= 0) {
         return await reply({
             embeds: [
-                EmbedUI.createErrorMessage(`Vous n'avez rien à retirer de la banque !`)
+                EmbedUI.createErrorMessage(`Vous n'avez aucun pièces de serveur à retirer du coffre-fort !`)
             ]
         });
     }
 
-    let amount: number;
-
-    if (amountInput.toLowerCase() === 'all') {
-        amount = memberBank.funds;
-    } else {
-        amount = Math.min(memberBank.funds, parseInt(amountInput));
-        if (isNaN(amount) || amount <= 0) {
-            return reply({
-                embeds: [
-                    EmbedUI.createErrorMessage(`Montant invalide`)
-                ],
-            });
-        }
-    }
-
-    if (memberBank.funds < amount) {
+    if (amountInput !== 'all' && isNaN(+amountInput) || +amountInput <= 0) {
         return reply({
             embeds: [
-                EmbedUI.createErrorMessage({
-                    title: 'Fonds insuffisants',
-                    description: `Tu n'as que **${memberBank.funds}** pièces en banque :/`,
-                })
-            ]
+                EmbedUI.createErrorMessage(`Montant invalide`)
+            ],
         });
     }
 
-    await memberService.updateOrCreate(userId, guildId, {
-        update: {
-            bank: {
-                update: {
-                    funds: {
-                        decrement: amount
-                    }
-                }
-            },
-            coins: { increment: amount },
-        },
-    });
+    const { withdrawn } = await memberVaultService.withdrawGuildCoins({
+        userId,
+        guildId
+    }, amountInput as number | 'all');
 
     return reply({
         embeds: [
             EmbedUI.createMessage({
                 color: 'green',
                 title: '🏧 Retrait effectué',
-                description: `Tu as retiré **${amount}** pièces de ta banque vers ton portefeuille !`,
+                description: `Tu as retiré **${withdrawn}** pièces de serveur vers ta poche !`,
             })
         ]
     });
 };
 
 export default new Command({
-    description: 'Withdraw money from your bank to your wallet',
+    description: '🔐⬅➡️ Withdraw your server coins from the vault',
     nameLocalizations: {
         fr: 'retirer'
     },
     descriptionLocalizations: {
-        fr: 'Retire des pièces de la banque vers ton portefeuille'
+        fr: '🔐➡️ Retirer ses pièces de serveur du coffre-fort'
     },
     slashCommand: {
         arguments: [
@@ -94,11 +70,15 @@ export default new Command({
                 type: 3,
                 name: 'amount',
                 description: 'The amount to withdraw or "all"',
+                description_localizations: {
+                    fr: 'Le montant à retirer ou " all"'
+                },
                 required: true,
             }
         ],
     },
     messageCommand: {
+        style: 'flat',
         aliases: ['withdraw', 'r'],
     },
     access: {

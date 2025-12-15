@@ -6,7 +6,7 @@ import {
     guildSettingsService,
     userService,
 } from '@/database/services'
-import { memberService } from '@/database/services/v2/member'
+import { memberService } from '@/database/services/member'
 
 import { levelUpCard } from '@/ui/assets/cards/levelUpCard'
 
@@ -54,6 +54,8 @@ export default new Event({
             return this.client.emit('commandCreate', command, message, args);
         }
 
+        return;
+
         if (this.client.mainGuild.id !== message.guild.id) return;
 
         const userId = message.author.id;
@@ -92,7 +94,7 @@ export default new Event({
 
                         const randomCoins = Math.floor((Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain) * tagBoostValue);
 
-                        await memberService.addGuildPoints({
+                        await memberService.addGuildCoins({
                             userId,
                             guildId,
                             amount: randomCoins
@@ -165,7 +167,9 @@ export default new Event({
                                     attachment: await levelUpCard({
                                         username: memberHelper.getName() ?? 'unknown',
                                         avatarURL: memberHelper.getAvatarURL(),
-                                        accentColor: message.member!.roles.color?.hexColor ?? await getDominantColor(memberHelper.getAvatarURL(), false),
+                                        accentColor: message.member!.roles.color?.hexColor ?? await getDominantColor(memberHelper.getAvatarURL(),  {
+                                            returnRGB: false
+                                        }),
                                         newLevel: displayLevel,
                                     }),
                                     name: 'levelUpCard.png'
