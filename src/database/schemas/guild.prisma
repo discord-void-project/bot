@@ -1,12 +1,18 @@
 model Guild {
     id String @id
 
+    welcomeChannelId String?
+
+    supportRoleId String?
+
+    messageDeletedAuditChannelId String?
+    messageEditedAuditChannelId  String?
+
     members        Member[]
     levelRewards   GuildLevelReward[]
     ignoredChannel GuildIgnoredChannel[]
     shopItems      ShopItem[]
     settings       GuildSettings[]
-
     blacklists BlacklistGuild[]
 
     createdAt DateTime @default(now())

@@ -11,6 +11,7 @@ import db from '@/database/db'
 import { PrismaUserFlags } from '@/database/utils'
 
 import { EmbedUI } from '@/ui/EmbedUI'
+import { logger } from '@/utils'
 
 const replyBy = async (interaction: Message | ChatInputCommandInteraction, payload: BaseMessageOptions) => {
     try {
@@ -19,8 +20,8 @@ const replyBy = async (interaction: Message | ChatInputCommandInteraction, paylo
         } else if (interaction instanceof Message && interaction.channel.isSendable()) {
             return await interaction.reply(payload);
         }
-    } catch {
-        console.log('ERROR SLASH COMMAND 404');
+    } catch (ex) {
+        logger.error(ex);
     }
 }
 

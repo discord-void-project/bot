@@ -8,10 +8,9 @@ import {
 export type GuildCreateInputWithoutId = Omit<GuildCreateInput, 'id'>;
 
 class GuildService {
-    constructor(
-        public model: typeof db.guild
-    ) {}
+    constructor(public model: typeof db.guild) { }
 
+    // -- CRUD -- //
     async findById(guildId: string) {
         return await this.model.findUnique({ where: { id: guildId } });
     }
@@ -33,20 +32,37 @@ class GuildService {
     }
 
     async create(guildId: string, data: GuildCreateInputWithoutId) {
-        return this.model.create({ data: { id: guildId, ...data } });
+        return await this.model.create({ data: { id: guildId, ...data } });
     }
 
     async update(guildId: string, data: GuildUpdateInput) {
-        return this.model.update({
+        return await this.model.update({
             where: { id: guildId },
             data
         });
     }
 
     async delete(guildId: string) {
-        return this.model.delete({
+        return await this.model.delete({
             where: { id: guildId }
         });
+    }
+
+    // -- Setter -- //
+    async setWelcomeChannel(guildId: string, channelId: string | null) {
+        return await this.createOrUpdate(guildId, { welcomeChannelId: channelId });
+    }
+
+    async setSupportRole(guildId: string, roleId: string | null) {
+        return await this.createOrUpdate(guildId, { supportRoleId: roleId });
+    }
+
+    async setMessageDeletedAuditChannel(guildId: string, channelId: string | null) {
+        return await this.createOrUpdate(guildId, { messageDeletedAuditChannelId: channelId });
+    }
+
+    async setMessageEditedAuditChannel(guildId: string, channelId: string | null) {
+        return await this.createOrUpdate(guildId, { messageEditedAuditChannelId: channelId });
     }
 }
 
