@@ -18,6 +18,13 @@ export default new Command({
     nameLocalizations: {
         fr: 'améliorer'
     },
+    access: {
+        guild: {
+            modules: {
+                eco: true
+            }
+        }
+    },
     slashCommand: {
         arguments: [
             {

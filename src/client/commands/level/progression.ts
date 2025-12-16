@@ -6,7 +6,7 @@ import {
 } from 'discord.js'
 
 import {
-    guildSettingsService,
+    guildModuleService,
     memberService,
     userService
 } from '@/database/services'
@@ -23,9 +23,6 @@ import {
 } from '@/utils'
 import { createBoostLine } from '@/ui/components/createBoostLine'
 
-const MAX_GUILD_TAG_BOOST = 0.1;
-const MAX_GUILD_NITRO_BOOST = 0.2;
-
 const buildEmbed = async (member: GuildMember) => {
     const memberHelper = await guildMemberHelper(member);
 
@@ -40,26 +37,29 @@ const buildEmbed = async (member: GuildMember) => {
     const guild = member.guild;
     const guildId = guild.id;
 
-    const progressionSetting = await guildSettingsService.findOrCreate(guildId, 'progression');
-    if (!progressionSetting?.isActive) {
-        return EmbedUI.createErrorMessage('Le module de progression est désactivé pour ce serveur');
-    }
-
     const memberAvatar = memberHelper.getAvatarURL();
 
     const [
         memberAvatarDominantColor,
         memberData,
         leaderboard,
-        user
+        user,
+        guildLevelModule
     ] = await Promise.all([
         getDominantColor(memberAvatar),
         memberService.findById({ userId, guildId }),
         memberService.getActivityXpRank({ userId, guildId }),
-        userService.findById(userId)
+        userService.findById(userId),
+        guildModuleService.findOrCreate({
+            guildId,
+            moduleName: 'level'
+        })
     ]);
 
     const activityXp = memberData?.activityXp ?? 0;
+
+    const tagSupporterFactor = guildLevelModule.settings.tagSupporterFactor;
+    const boosterFactor = guildLevelModule.settings.boosterFactor;
 
     const {
         currentXp,
@@ -69,14 +69,11 @@ const buildEmbed = async (member: GuildMember) => {
         xpForLevel
     } = xpToNextLevel(activityXp)
 
-    const tagBoostPercent = Math.floor(
-        dateElapsedRatio(user?.tagAssignedAt, 14)
-        * MAX_GUILD_TAG_BOOST * 100
-    );
+    const tagBoostPercent = Math.floor(dateElapsedRatio(user?.tagAssignedAt, 14) * tagSupporterFactor * 100);
 
     const guildBoostPercent = Math.floor(
         (member.premiumSince
-            ? dateElapsedRatio(member.premiumSince, 7) * MAX_GUILD_NITRO_BOOST
+            ? dateElapsedRatio(member.premiumSince, 7) * boosterFactor
             : 0) * 100
     )
 
@@ -107,24 +104,27 @@ const buildEmbed = async (member: GuildMember) => {
             name: "Total d'XP",
             value: currentXp.toLocaleString('en')
         },
-        {
+    ];
+
+    if (tagBoostPercent || tagSupporterFactor) {
+        fields.push({
             name: 'Boosts',
             value: [
-                '- '.concat(createBoostLine({
+                boosterFactor && '- '.concat(createBoostLine({
                     label: 'Boost du serveur',
                     value: guildBoostPercent,
-                    max: MAX_GUILD_NITRO_BOOST * 100,
+                    max: boosterFactor * 100,
                     arrowColor: 'green'
                 })),
-                guildHasTag && createBoostLine({
+                (tagSupporterFactor && guildHasTag) && '- '.concat(createBoostLine({
                     label: 'Tag du serveur',
                     value: tagBoostPercent,
-                    max: MAX_GUILD_TAG_BOOST * 100,
+                    max: tagSupporterFactor * 100,
                     arrowColor: 'green'
-                }),
-            ].filter(Boolean).join('\n- ')
-        }
-    ];
+                })),
+            ].filter(Boolean).join('\n ')
+        })
+    }
 
     return EmbedUI.create({
         color: memberAvatarDominantColor,
@@ -144,6 +144,13 @@ export default new Command({
     description: "🧪 Display a member's progression",
     descriptionLocalizations: {
         fr: "🧪 Afficher la progression d'un membre"
+    },
+    access: {
+        guild: {
+            modules: {
+                level: true
+            }
+        }
     },
     slashCommand: {
         arguments: [

@@ -12,7 +12,7 @@ import { EmbedUI } from '@/ui/EmbedUI'
 
 import { applicationEmojiHelper } from '@/helpers'
 import { formatCompactNumber } from '@/utils'
-import { memberBankService } from '@/database/services/member-bank-service'
+import { memberBankService } from '@/database/services/member-bank'
 
 const ROLE_DISCOUNT = 0.15;
 
@@ -26,9 +26,11 @@ export default new Command({
     },
     access: {
         guild: {
-            authorizedIds: [
-                mainGuildConfig.id
-            ]
+            modules: {
+                eco: {
+                    isShopEnabled: true
+                }
+            }
         }
     },
     async onInteraction(interaction) {

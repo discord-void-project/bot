@@ -1,10 +1,8 @@
 import { Command } from '@/structures/Command'
 
-import { guildSettingsService, memberService } from '@/database/services'
-import { mainGuildConfig } from '@/client/config'
-
 import { EmbedUI } from '@/ui/EmbedUI'
 import { createCooldown } from '@/utils'
+import { memberService } from '@/database/services'
 
 interface HandleWorkContext {
     userId: string;
@@ -22,11 +20,11 @@ const handleWorkCommand = async ({
     const memberKey = { userId, guildId }
 
     const member = await memberService.findOrCreate(memberKey);
-    const ecoSettings = await guildSettingsService.findOrCreate(guildId, 'eco');
+    // const ecoSettings = { workerData };
 
-    const COOLDOWN = (ecoSettings.workCooldown ?? 30) * 60 * 1000;
-    const MIN_REWARD = ecoSettings.workMinGain ?? 25;
-    const MAX_REWARD = ecoSettings.workMaxGain ?? 75;
+    const COOLDOWN = (30) * 60 * 1000;
+    const MIN_REWARD = 25;
+    const MAX_REWARD = 75;
 
     const { isActive, expireTimestamp } = createCooldown(member.lastWorkedAt, COOLDOWN);
     const now = Date.now();
@@ -97,9 +95,11 @@ export default new Command({
     },
     access: {
         guild: {
-            authorizedIds: [
-                mainGuildConfig.id
-            ]
+            modules: {
+                eco: {
+                    isWorkEnabled: true,
+                }
+            }
         }
     },
     async onInteraction(interaction) {

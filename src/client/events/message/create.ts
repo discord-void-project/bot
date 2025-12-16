@@ -1,27 +1,12 @@
 import { Event, MessageCommandStyle } from '@/structures'
 
-import {
-    guildIgnoredChannelService,
-    guildLevelRewardService,
-    guildSettingsService,
-    userService,
-} from '@/database/services'
 import { memberService } from '@/database/services/member'
 
-import { levelUpCard } from '@/ui/assets/cards/levelUpCard'
-
-import { getDominantColor } from '@/utils/image'
-import { levelToXp, xpToLevel } from '@/utils/math'
-
-import { guildMemberHelper } from '@/helpers'
-import { dateElapsedRatio } from '@/utils'
-
+/** @deprecated */
 const channelsAutomaticThread = [
     '1351619802002886706',
     '1405139939988996207'
 ]
-
-const MAX_TAG_BOOST = 0.1;
 
 export default new Event({
     name: 'messageCreate',
@@ -30,7 +15,9 @@ export default new Event({
 
         const prefix = process.env.PREFIX;
 
-        if (message.content.startsWith(prefix)) {
+        const messageStartsWithPrefix = message.content.startsWith(prefix)
+
+        if (messageStartsWithPrefix) {
             let args = message.content
                 .slice(prefix.length)
                 .trim()
@@ -54,132 +41,138 @@ export default new Event({
             return this.client.emit('commandCreate', command, message, args);
         }
 
-        return;
-
-        if (this.client.mainGuild.id !== message.guild.id) return;
+        if (this.client.mainGuild.id === message.guild.id) {
+            if (process.env.ENV === 'PROD' && channelsAutomaticThread.includes(message.channel.id)) {
+                return await message.startThread({
+                    name: `Discussion avec ${message.author.username}`,
+                });
+            }
+        };
 
         const userId = message.author.id;
-        const guildId = message.guild!.id;
+        const guildId = message.guild.id;
 
-        if (process.env.ENV === 'PROD' && channelsAutomaticThread.includes(message.channel.id)) {
-            return await message.startThread({
-                name: `Discussion avec ${message.author.username}`,
-            });
+        if (!messageStartsWithPrefix) {
+            await memberService.incrementMessageCount({ userId, guildId });
         }
 
-        const user = await userService.findById(userId);
-        const member = await memberService.incrementMessageCount({ userId, guildId });
 
-        const ratio = user?.tagAssignedAt
-            ? dateElapsedRatio(new Date(user.tagAssignedAt), 14)
-            : 0;
+        // const [
+        //     user,
+        //     member,
+        //     guildLevelModule,
+        //     ecoLevelModule
+        // ] = await Promise.all([
+        //     userService.findById(userId),
+        //     memberService.incrementMessageCount({ userId, guildId }),
+        //     guildModuleService.findById({ guildId, moduleName: 'level' }),
+        //     guildModuleService.findById({ guildId, moduleName: 'eco' }),
+        // ]);
 
-        const tagBoostValue = ratio ? 1 + (ratio * MAX_TAG_BOOST) : 1;
+        // const tagBoostRatio = user?.tagAssignedAt ? dateElapsedRatio(new Date(user.tagAssignedAt), 14) : 0;
 
-        const {
-            progression: progressionSettings,
-            eco: ecoSettings,
-        } = await guildSettingsService.findManyOrCreate(guildId, ['progression', 'eco'])
-        if (!progressionSettings || !ecoSettings) return;
+        // const tagBoostValue = ratio ? 1 + (ratio * MAX_TAG_BOOST) : 1;
 
-        const isIgnoredProgressionChannel = await guildIgnoredChannelService.has(guildId, 'progression', message.channel.id);
-        const isIgnoredEcoPChannel = await guildIgnoredChannelService.has(guildId, 'progression', message.channel.id);
+        // if (!guildLevelModule || !ecoLevelModule) return;
 
-        if (!isIgnoredEcoPChannel) {
-            if (ecoSettings.isActive) {
-                if (ecoSettings.isCoinsMessageEnabled) {
-                    if (Math.random() < (ecoSettings.messageLuck / 100)) {
-                        const maxGain = ecoSettings.messageMaxGain;
-                        const minGain = ecoSettings.messageMinGain;
+        // const isIgnoredProgressionChannel = await guildIgnoredChannelService.has(guildId, 'progression', message.channel.id);
+        // const isIgnoredEcoPChannel = await guildIgnoredChannelService.has(guildId, 'progression', message.channel.id);
 
-                        const randomCoins = Math.floor((Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain) * tagBoostValue);
+        // if (!isIgnoredEcoPChannel) {
+        //     if (ecoSettings.isActive) {
+        //         if (ecoSettings.isCoinsMessageEnabled) {
+        //             if (Math.random() < (ecoSettings.messageLuck / 100)) {
+        //                 const maxGain = ecoSettings.messageMaxGain;
+        //                 const minGain = ecoSettings.messageMinGain;
 
-                        await memberService.addGuildCoins({
-                            userId,
-                            guildId,
-                            amount: randomCoins
-                        });
-                    }
-                }
-            }
-        }
+        //                 const randomCoins = Math.floor((Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain) * tagBoostValue);
 
-        if (!isIgnoredProgressionChannel) {
-            if (progressionSettings.isActive) {
-                if (progressionSettings.isXpMessageEnabled) {
-                    let reachLevelMax = progressionSettings.maxLevel && member.level >= progressionSettings.maxLevel
+        //                 await memberService.addGuildCoins({
+        //                     userId,
+        //                     guildId,
+        //                     amount: randomCoins
+        //                 });
+        //             }
+        //         }
+        //     }
+        // }
 
-                    if (!reachLevelMax && (Math.random() < (progressionSettings.messageLuck / 100))) {
-                        const maxGain = progressionSettings.messageMaxGain;
-                        const minGain = progressionSettings.messageMinGain;
+        // if (!isIgnoredProgressionChannel) {
+        //     if (progressionSettings.isActive) {
+        //         if (progressionSettings.isXpMessageEnabled) {
+        //             let reachLevelMax = progressionSettings.maxLevel && member.level >= progressionSettings.maxLevel
 
-                        const randomXP = Math.floor((Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain) * tagBoostValue);
+        //             if (!reachLevelMax && (Math.random() < (progressionSettings.messageLuck / 100))) {
+        //                 const maxGain = progressionSettings.messageMaxGain;
+        //                 const minGain = progressionSettings.messageMinGain;
 
-                        const currentLevel = xpToLevel(member.activityXp);
-                        const newXP = member.activityXp + randomXP;
-                        const newLevel = xpToLevel(newXP);
+        //                 const randomXP = Math.floor((Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain) * tagBoostValue);
 
-                        reachLevelMax = progressionSettings.maxLevel && newLevel >= progressionSettings.maxLevel;
+        //                 const currentLevel = xpToLevel(member.activityXp);
+        //                 const newXP = member.activityXp + randomXP;
+        //                 const newLevel = xpToLevel(newXP);
 
-                        if (reachLevelMax) {
-                            const amount = levelToXp(progressionSettings.maxLevel);
+        //                 reachLevelMax = progressionSettings.maxLevel && newLevel >= progressionSettings.maxLevel;
 
-                            await memberService.setActivityXp({
-                                userId,
-                                guildId,
-                                value: amount
-                            });
-                        } else {
-                            await memberService.addActivityXp({
-                                userId,
-                                guildId,
-                                amount: randomXP
-                            });
-                        }
+        //                 if (reachLevelMax) {
+        //                     const amount = levelToXp(progressionSettings.maxLevel);
 
-                        if (newLevel > currentLevel) {
-                            let rewards = await guildLevelRewardService.findMany(guildId);
-                            if (rewards.length) {
-                                rewards = rewards.filter(({ atLevel }) => {
-                                    return atLevel <= newLevel
-                                });
+        //                     await memberService.setActivityXp({
+        //                         userId,
+        //                         guildId,
+        //                         value: amount
+        //                     });
+        //                 } else {
+        //                     await memberService.addActivityXp({
+        //                         userId,
+        //                         guildId,
+        //                         amount: randomXP
+        //                     });
+        //                 }
 
-                                const rolesReward = await Promise.all(
-                                    rewards
-                                        .filter(({ roleId }) => roleId && !message.member?.roles.cache.get(roleId))
-                                        .map(async ({ roleId }) => {
-                                            return await message.guild!.roles.fetch(roleId!)
-                                        })
-                                );
+        //                 if (newLevel > currentLevel) {
+        //                     let rewards = await guildLevelRewardService.findMany(guildId);
+        //                     if (rewards.length) {
+        //                         rewards = rewards.filter(({ atLevel }) => {
+        //                             return atLevel <= newLevel
+        //                         });
 
-                                if (rolesReward) {
-                                    await message.member?.roles.add(rolesReward as any);
-                                }
-                            };
+        //                         const rolesReward = await Promise.all(
+        //                             rewards
+        //                                 .filter(({ roleId }) => roleId && !message.member?.roles.cache.get(roleId))
+        //                                 .map(async ({ roleId }) => {
+        //                                     return await message.guild!.roles.fetch(roleId!)
+        //                                 })
+        //                         );
+
+        //                         if (rolesReward) {
+        //                             await message.member?.roles.add(rolesReward as any);
+        //                         }
+        //                     };
 
 
-                            const memberHelper = await guildMemberHelper(message.member!);
-                            const displayLevel = reachLevelMax ? 'MAX' : newLevel;
+        //                     const memberHelper = await guildMemberHelper(message.member!);
+        //                     const displayLevel = reachLevelMax ? 'MAX' : newLevel;
 
-                            await message.channel.send({
-                                content: `<@${userId}> Nv. **${currentLevel}** ➔ Nv. **${displayLevel}** 🎉`,
-                                files: [{
-                                    attachment: await levelUpCard({
-                                        username: memberHelper.getName() ?? 'unknown',
-                                        avatarURL: memberHelper.getAvatarURL(),
-                                        accentColor: message.member!.roles.color?.hexColor ?? await getDominantColor(memberHelper.getAvatarURL(),  {
-                                            returnRGB: false
-                                        }),
-                                        newLevel: displayLevel,
-                                    }),
-                                    name: 'levelUpCard.png'
-                                }]
-                            });
-                        }
-                    }
-                }
-            }
+        //                     await message.channel.send({
+        //                         content: `<@${userId}> Nv. **${currentLevel}** ➔ Nv. **${displayLevel}** 🎉`,
+        //                         files: [{
+        //                             attachment: await levelUpCard({
+        //                                 username: memberHelper.getName() ?? 'unknown',
+        //                                 avatarURL: memberHelper.getAvatarURL(),
+        //                                 accentColor: message.member!.roles.color?.hexColor ?? await getDominantColor(memberHelper.getAvatarURL(),  {
+        //                                     returnRGB: false
+        //                                 }),
+        //                                 newLevel: displayLevel,
+        //                             }),
+        //                             name: 'levelUpCard.png'
+        //                         }]
+        //                     });
+        //                 }
+        //             }
+        //         }
+        //     }
 
-        }
+        // }
     }
 });

@@ -9,6 +9,8 @@ import {
     RESTPostAPIApplicationCommandsJSONBody
 } from 'discord.js'
 
+import { defaultGuildModuleSettings } from '@/database/utils'
+
 import client from '@/client/instance'
 
 // --- Message Command ---
@@ -56,6 +58,11 @@ export interface CommandAccessOptions {
         authorizedIds?: string[];
         isPremium?: boolean;
         isPartner?: boolean;
+        modules?: Partial<{
+            [K in keyof typeof defaultGuildModuleSettings]: Partial<{
+                [P in keyof typeof defaultGuildModuleSettings[K]]: boolean
+            }> | boolean
+        }>
     };
 }
 
@@ -137,7 +144,7 @@ export class Command {
     }
 
     toAPI() {
-        const data : RESTPostAPIApplicationCommandsJSONBody = {
+        const data: RESTPostAPIApplicationCommandsJSONBody = {
             name: this.name,
             description: this.description ?? this.name,
             name_localizations: this.nameLocalizations,
@@ -154,11 +161,11 @@ export class Command {
             if (guild) {
                 contexts.push(InteractionContextType.Guild);
             }
-            
+
             if (botDM) {
                 contexts.push(InteractionContextType.BotDM);
             }
-            
+
             if (group) {
                 contexts.push(InteractionContextType.PrivateChannel);
             }

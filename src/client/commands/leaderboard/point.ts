@@ -102,9 +102,16 @@ export default new Command({
     descriptionLocalizations: {
         fr: '🏆 Affiche le classement des membres les plus riches du serveur'
     },
+    access: {
+        guild: {
+            modules: {
+                eco: true
+            }
+        }
+    },
     messageCommand: {
         style: 'flat',
-        aliases: [ 'toppoint', 'tpoint' ],
+        aliases: ['toppoint', 'tpoint'],
     },
     async onInteraction(interaction) {
         await interaction.deferReply()

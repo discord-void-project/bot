@@ -1,5 +1,7 @@
-export const defaultEcoGuildSettings = {
-    isActive: false,
+export const defaultEcoGuildModuleSettings = {
+    // Boost
+    boosterFactor: 0.2,
+    tagSupporterFactor: 0.1,
 
     // Message
     guildPointsFromMessageEnabled: true,
@@ -21,12 +23,21 @@ export const defaultEcoGuildSettings = {
     workMinGain: 200,
     workMaxGain: 500,
 
+    // Rob
+    isRobEnabled: true,
+    robSuccessChance: 0.3,
+    robStealPercentage: 0.20,
+    robCooldown: 60 * 60 * 1000,
+    robbedCooldown: 3 * 60 * 60 * 1000,
+
     // Shop
     isShopEnabled: false,
 }
 
-export const defaultLevelGuildSettings = {
-    isActive: false,
+export const defaultLevelGuildModuleSettings = {
+    // Boost
+    boosterFactor: 0.2,
+    tagSupporterFactor: 0.1,
 
     // Message
     isXpFromMessageEnabled: true,
@@ -40,7 +51,11 @@ export const defaultLevelGuildSettings = {
     maxLevel: 100,
 }
 
-export const defaultGuildSettings = {
-    eco: defaultEcoGuildSettings,
-    level: defaultLevelGuildSettings
+export const defaultGuildModuleSettings = {
+    eco: defaultEcoGuildModuleSettings,
+    level: defaultLevelGuildModuleSettings
 };
+
+export type GuildModuleName = keyof typeof defaultGuildModuleSettings;
+export type GuildModuleSetting<T extends GuildModuleName> = typeof defaultGuildModuleSettings[T];
+export type GuildModuleKeys<T extends GuildModuleName> = keyof GuildModuleSetting<T>;

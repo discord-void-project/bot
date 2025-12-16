@@ -4,7 +4,6 @@ import { memberService } from '@/database/services/member'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 import { formatCompactNumber } from '@/utils'
-import { mainGuildConfig } from '@/client/config'
 
 interface HandleDepositContext {
     userId: string;
@@ -95,16 +94,16 @@ export default new Command({
             }
         ]
     },
+    access: {
+        guild: {
+            modules: {
+                eco: true
+            }
+        }
+    },
     messageCommand: {
         style: 'flat',
         aliases: ['deposit', 'dep'],
-    },
-    access: {
-        guild: {
-            authorizedIds: [
-                mainGuildConfig.id
-            ]
-        }
     },
     async onInteraction(interaction) {
         const amountInput = interaction.options.getString('amount', true);

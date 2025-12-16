@@ -348,9 +348,51 @@ class MemberService {
     }
 
     // -- Stats -- //
-    async incrementVoiceTime(where: MemberWhere, minutes?: number) {
+    async incrementCallPublicTime(where: MemberWhere, minutes?: number) {
         return await this._updateNumberField(where, {
-            field: 'voiceTotalMinutes',
+            field: 'callPublicMinutes',
+            amount: minutes ?? 1
+        });
+    }
+
+    async incrementCallPrivateTime(where: MemberWhere, minutes?: number) {
+        return await this._updateNumberField(where, {
+            field: 'callPrivateMinutes',
+            amount: minutes ?? 1
+        });
+    }
+
+    async incrementCallActiveTime(where: MemberWhere, minutes?: number) {
+        return await this._updateNumberField(where, {
+            field: 'callActiveMinutes',
+            amount: minutes ?? 1
+        });
+    }
+
+    async incrementCallDeafTime(where: MemberWhere, minutes?: number) {
+        return await this._updateNumberField(where, {
+            field: 'callDeafMinutes',
+            amount: minutes ?? 1
+        });
+    }
+
+    async incrementCallMutedTime(where: MemberWhere, minutes?: number) {
+        return await this._updateNumberField(where, {
+            field: 'callMutedMinutes',
+            amount: minutes ?? 1
+        });
+    }
+
+    async incrementCallStreamingTime(where: MemberWhere, minutes?: number) {
+        return await this._updateNumberField(where, {
+            field: 'callStreamingMinutes',
+            amount: minutes ?? 1
+        });
+    }
+
+    async incrementCallCameraTime(where: MemberWhere, minutes?: number) {
+        return await this._updateNumberField(where, {
+            field: 'callCameraMinutes',
             amount: minutes ?? 1
         });
     }
@@ -378,7 +420,9 @@ class MemberService {
 
     async resetStats(where: MemberWhere) {
         return await this.updateOrCreate(where, {
-            voiceTotalMinutes: 0,
+            callActiveMinutes: 0,
+            callDeafMinutes: 0,
+            callMutedMinutes: 0,
             messageCount: 0,
             dailyStreak: 0
         });

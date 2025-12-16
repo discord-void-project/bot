@@ -4,12 +4,12 @@ import {
     ActivityType,
     DiscordjsErrorCodes,
     DefaultWebSocketManagerOptions,
-    Collection,
     Guild,
     TextChannel,
 } from 'discord.js'
 
 import {
+    CallSessionManager,
     CommandManager,
     EventManager,
 } from '@/client/managers'
@@ -40,10 +40,9 @@ export class CustomClient extends Client {
 
     isDatabaseConnected: boolean;
 
-    voiceSessions: Collection<string, { channelId: string; timestamp: number }>;
-
     events: EventManager;
     commands: CommandManager;
+    callSessions: CallSessionManager;
 
     logger: Logger;
 
@@ -81,7 +80,6 @@ export class CustomClient extends Client {
         return super.removeAllListeners(event as string);
     };
 
-
     constructor(options: ClientOptions) {
         super({
             ...options,
@@ -97,8 +95,7 @@ export class CustomClient extends Client {
 
         this.events = new EventManager(this);
         this.commands = new CommandManager(this);
-
-        this.voiceSessions = new Collection();
+        this.callSessions = new CallSessionManager(this);
 
         this.logger = logger.use({
             prefix: (c) => c.white(`[CLIENT] <🤖>`)

@@ -32,7 +32,7 @@ const buildEmbed = async (member: GuildMember) => {
     };
 
     const vaultGuildCoinsCapacity = tierCapacity[memberVault.capacityTier].guildCoins?.capacity;
-    
+
     return EmbedUI.createMessage({
         color: memberAvatarDominantColor,
         thumbnail: {
@@ -73,6 +73,13 @@ export default new Command({
             'bal',
             'bank'
         ]
+    },
+    access: {
+        guild: {
+            modules: {
+                eco: true
+            }
+        }
     },
     slashCommand: {
         arguments: [

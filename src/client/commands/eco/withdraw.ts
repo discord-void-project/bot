@@ -83,9 +83,9 @@ export default new Command({
     },
     access: {
         guild: {
-            authorizedIds: [
-                mainGuildConfig.id
-            ]
+            modules: {
+                eco: true
+            }
         }
     },
     async onInteraction(interaction) {

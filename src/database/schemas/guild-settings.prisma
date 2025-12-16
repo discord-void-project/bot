@@ -1,10 +1,11 @@
-model GuildSettings {
+model GuildModule {
     guildId String
-    name    String
-    options Json
+    guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
-    guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+    name     String
+    isActive Boolean @default(false)
+    settings Json
 
     @@id([guildId, name])
-    @@map("guild_settings")
+    @@map("guild_module")
 }

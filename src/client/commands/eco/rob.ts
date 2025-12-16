@@ -2,17 +2,10 @@ import { ApplicationCommandOptionType, MessageFlags } from 'discord.js'
 import { Command } from '@/structures/Command'
 
 import db from '@/database/db'
-import { memberService } from '@/database/services'
+import { guildModuleService, memberService } from '@/database/services'
 
-import { createCooldown } from '@/utils'
+import { createCooldown, formatTimeLeft } from '@/utils'
 import { EmbedUI } from '@/ui/EmbedUI'
-
-import { mainGuildConfig } from '@/client/config'
-
-const SUCCESS_CHANCE = 0.3;
-const STEAL_PERCENTAGE = 0.20;
-const ROB_COOLDOWN = 60 * 60 * 1000;
-const ROBBED_COOLDOWN = 3 * 60 * 60 * 1000;
 
 export default new Command({
     nameLocalizations: {
@@ -43,9 +36,11 @@ export default new Command({
     },
     access: {
         guild: {
-            authorizedIds: [
-                mainGuildConfig.id
-            ]
+            modules: {
+                eco: {
+                    isRobEnabled: true
+                }
+            }
         }
     },
     async onInteraction(interaction) {
@@ -83,22 +78,24 @@ export default new Command({
         }
 
         let robber = await memberService.findOrCreate(robberKey);
+        const { settings: ecoSettings } = await guildModuleService.findOrCreate({
+            guildId,
+            moduleName: 'eco'
+        });
 
-        const { isActive: canRob } = createCooldown(robber.lastRobAt, ROB_COOLDOWN);
+        const { isActive: canRob, expireTimestamp } = createCooldown(robber.lastRobAt, ecoSettings.robCooldown);
         if (canRob) {
             return await interaction.reply({
                 embeds: [
                     EmbedUI.createMessage({
                         color: 'red',
                         title: '⏳ Cooldown',
-                        description: `Tu dois attendre **1h** avant de voler à nouveau !`,
+                        description: `Tu dois attendre ${formatTimeLeft(expireTimestamp)} avant de voler à nouveau !`,
                     }),
                 ],
                 flags: MessageFlags.Ephemeral
             });
         }
-
-        // const robberVault = await memberBankService.findOrCreate(robberId, guildId);
 
         const targetKey = {
             userId: targetUser.id,
@@ -119,7 +116,7 @@ export default new Command({
             });
         }
 
-        const { isActive: isAlreadyRobbed } = createCooldown(target.lastRobbedAt, ROBBED_COOLDOWN);
+        const { isActive: isAlreadyRobbed } = createCooldown(target.lastRobbedAt, ecoSettings.robbedCooldown);
         if (isAlreadyRobbed) {
             return await interaction.reply({
                 embeds: [
@@ -132,13 +129,13 @@ export default new Command({
             });
         }
 
-        const success = Math.random() < (SUCCESS_CHANCE);
+        const success = Math.random() < (ecoSettings.robSuccessChance);
 
         await memberService.setLastRobAt(robberKey);
         await memberService.setLastRobbedAt(targetKey);
 
         if (success) {
-            const stolenAmount = Math.floor(target.guildCoins * STEAL_PERCENTAGE);
+            const stolenAmount = Math.floor(target.guildCoins * ecoSettings.robStealPercentage);
 
             await db.$transaction(async (tx) => {
                 const ctx = Object.create(memberService, {
@@ -154,7 +151,7 @@ export default new Command({
                     EmbedUI.createMessage({
                         color: 'green',
                         title: '🕵️‍♂️ Vol réussi !',
-                        description: `Tu as volé **${stolenAmount}** pièces à **${targetUser.username}** !`,
+                        description: `Tu as volé **${stolenAmount.toLocaleString('en')}** pièces à **${targetUser.username}** !`,
                     }),
                 ],
             });
@@ -169,7 +166,7 @@ export default new Command({
                     EmbedUI.createMessage({
                         color: 'red',
                         title: '🚨 Vol échoué !',
-                        description: `Tu t'es fait attraper et tu perds **${penalty}** pièces en amende !`,
+                        description: `Tu t'es fait attraper et tu perds **${penalty.toLocaleString('en')}** pièces en amende !`,
                     }),
                 ],
             });

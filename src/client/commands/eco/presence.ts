@@ -9,6 +9,7 @@ import { EmbedUI, EmbedUIData } from '@/ui/EmbedUI'
 import {
     createCooldown,
     formatCompactNumber,
+    formatTimeLeft,
     getDateByLocale,
     getDominantColor,
     randomNumber
@@ -65,19 +66,8 @@ const buildEmbed = async (member: GuildMember) => {
     const getDailyStreakDay = () => Math.min(dailyStreak % 7, 7);
 
     if (isActive) {
-        const remaining = expireTimestamp - nowTZ;
-        const hours = Math.floor(remaining / (1000 * 60 * 60));
-        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-
-        const timeLeft =
-            hours > 0
-                ? minutes > 0
-                    ? `**${hours}h ${minutes}min**`
-                    : `**${hours}h**`
-                : `**${minutes}min**`;
-
         payload.color = memberAvatarDominantColor;
-        message = `Vous devez attendre encore ${timeLeft} avant de refaire valoir votre présence !`;
+        message = `Vous devez attendre encore ${formatTimeLeft(expireTimestamp, nowTZ)} avant de refaire valoir votre présence !`;
     } else {
         const isSameDay = checkIsSameDay(lastAttendedAtDate, nowTZ);
 
@@ -147,9 +137,9 @@ export default new Command({
     },
     access: {
         guild: {
-            authorizedIds: [
-                mainGuildConfig.id
-            ]
+            modules: {
+                eco: true
+            }
         }
     },
     async onInteraction(interaction) {

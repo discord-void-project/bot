@@ -11,7 +11,7 @@ export default new Command({
         style: 'slashCommand'
     },
     async onMessage(message) {
-        const voiceSessions = this.client.voiceSessions;
+        const voiceSessions = this.client.callSessions.cache;
         const totalSessions = voiceSessions.size;
         const inSession = voiceSessions.has(message.author.id);
 
@@ -37,16 +37,29 @@ export default new Command({
                             name: '🆔 Aperçu des sessions',
                             value: sampleSessions.length > 0
                                 ? sampleSessions
-                                    .map(([id, session]) => 
-                                        `\`${id}\` • ⏱️ <t:${Math.floor(session.timestamp / 1000)}:R>`
-                                    )
+                                    .map(([id, session]) => {
+                                        const member = this.client.users.cache.get(id);
+
+                                        const flags = session.flags;
+
+                                        const statusEmojis = [
+                                            flags.isDeaf ? '🙉' : flags.isMuted ? '🙊' : '🔊',
+                                            flags.isPrivate ? '🔒' : '🌐',
+                                            flags.isStreaming ? '🎥' : '',
+                                            flags.hasCamera ? '📹' : '',
+                                        ].filter(Boolean).join(' ');
+
+                                        const timeAgo = `<t:${Math.floor(session.timestamp / 1000)}:R>`;
+
+                                        return `\`${member?.username ?? 'Unknown'}\` (${id}) • ${statusEmojis} • ⏱️ ${timeAgo}`;
+                                    })
                                     .join('\n')
                                 : 'Aucune session est actuellement actif'
                         }
                     ],
                     footer: {
-                        text: sampleSessions.length < totalSessions 
-                            ? `Seulement ${sampleSessions.length} / ${totalSessions} affichées` 
+                        text: sampleSessions.length < totalSessions
+                            ? `Seulement ${sampleSessions.length} / ${totalSessions} affichées`
                             : 'Toutes les sessions sont affichées'
                     }
                 })

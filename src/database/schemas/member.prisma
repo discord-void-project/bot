@@ -5,11 +5,17 @@ model Member {
     guildId String
     guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
 
-    activityXp  Int @default(0)
+    activityXp Int @default(0)
     guildCoins Int @default(0)
 
-    messageCount      Int @default(0)
-    voiceTotalMinutes Int @default(0)
+    messageCount         Int @default(0)
+    callPrivateMinutes   Int @default(0)
+    callPublicMinutes    Int @default(0)
+    callActiveMinutes    Int @default(0)
+    callDeafMinutes      Int @default(0)
+    callMutedMinutes     Int @default(0)
+    callStreamingMinutes Int @default(0)
+    callCameraMinutes    Int @default(0)
 
     dailyStreak Int @default(0)
 

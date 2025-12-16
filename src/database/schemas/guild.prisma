@@ -12,8 +12,8 @@ model Guild {
     levelRewards   GuildLevelReward[]
     ignoredChannel GuildIgnoredChannel[]
     shopItems      ShopItem[]
-    settings       GuildSettings[]
-    blacklists BlacklistGuild[]
+    modules        GuildModule[]
+    blacklists     BlacklistGuild[]
 
     createdAt DateTime @default(now())
 }

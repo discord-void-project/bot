@@ -14,11 +14,11 @@ const buildEmbed = async (member: GuildMember) => {
 
     const rankers = (await db.member.findMany({
         where: { guildId: guild.id, activityXp: { gt: 0 } }
-    })).sort((a,b) => b.activityXp - a.activityXp);
+    })).sort((a, b) => b.activityXp - a.activityXp);
 
     if (!rankers.length) return EmbedUI.createMessage('Aucune donnée', { color: 'orange' });
 
-    const topUserIds = rankers.slice(0,10).map(r => r.userId);
+    const topUserIds = rankers.slice(0, 10).map(r => r.userId);
     const topMembersMap = new Map(
         (await guild.members.fetch({ user: topUserIds }))
             .filter(m => m && !m.user.bot)
@@ -30,7 +30,7 @@ const buildEmbed = async (member: GuildMember) => {
 
     const top = rankers.slice(0, 10)
         .filter(r => topMembersMap.has(r.userId))
-        .map((r,i) => {
+        .map((r, i) => {
             const memberObj = topMembersMap.get(r.userId)!;
             const memberHelper = guildMemberHelperSync(memberObj);
             const place = medals[i] ?? `**${i + 1}**`;
@@ -69,6 +69,13 @@ export default new Command({
     description: "🏆 Shows the top members by level",
     descriptionLocalizations: {
         fr: "🏆 Affiche le classement des meilleurs membres par niveau"
+    },
+    access: {
+        guild: {
+            modules: {
+                level: true
+            }
+        }
     },
     messageCommand: {
         style: 'flat',

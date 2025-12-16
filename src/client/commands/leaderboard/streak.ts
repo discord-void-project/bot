@@ -82,6 +82,13 @@ export default new Command({
     descriptionLocalizations: {
         fr: '🔥 Affiche le classement des meilleures séries quotidiennes'
     },
+    access: {
+        guild: {
+            modules: {
+                eco: true
+            }
+        }
+    },
     messageCommand: {
         style: 'flat',
         aliases: ['topstreak', 'dstreak'],
