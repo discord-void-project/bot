@@ -16,9 +16,9 @@ const formatTime = (minutes: number) => {
 
     return h > 0
         ? m > 0
-            ? `**${h.toLocaleString('en')}** heures et **${m}** minutes`
+            ? `**${h.toLocaleString('en')}** heures et **${m}** min`
             : `**${h.toLocaleString('en')}** heures`
-        : `**${m}** minutes`;
+        : `**${m}** min`;
 };
 
 const buildEmbed = async (member: GuildMember, client: CustomClient) => {
