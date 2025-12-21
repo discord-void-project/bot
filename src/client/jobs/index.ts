@@ -5,9 +5,11 @@ export const jobsLogger = logger.use({
 });
 
 export const startAllJobs = async () => {
-    logger.log(`⏳ » Starting all jobs..`);
-    await import('./voiceTracking.js');
-    logger.log(`✅ » All jobs started successfully`);
+    logger.topBorderBox('jobs Loading ⏳');
+    await import('./tick.js');
+    logger.bottomBorderBox('✅ Jobs loaded');
+
+    console.log();
 }
 
 export default {

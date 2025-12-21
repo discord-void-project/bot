@@ -48,28 +48,3 @@ export const createCooldown = (timestamp: Date | string | null, duration: number
         expireTimestamp: cooldownEndTimestamp,
     };
 }
-
-export const dateElapsedRatio = (date: undefined | null | number | string | Date, days: number): number => {
-    if (typeof date === 'string') {
-        date = new Date(date);
-        if (isNaN(date.getTime())) {
-            return 0;
-        }
-    }
-
-    if (typeof date !== 'number' && !(date instanceof Date)) {
-        return 0
-    }
-
-    if (date instanceof Date) {
-        date = date.getTime();
-    }
-
-    const now = Date.now();
-    const elapsed = now - date;
-
-    const msInDay = 1000 * 60 * 60 * 24;
-    const totalMs = days * msInDay;
-
-    return +Math.min(1, elapsed / totalMs).toFixed(2);
-}

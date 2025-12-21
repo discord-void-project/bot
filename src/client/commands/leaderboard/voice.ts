@@ -13,8 +13,20 @@ const buildEmbed = async (member: GuildMember) => {
     const guild = member.guild;
 
     const rankers = (await db.member.findMany({
-        where: { guildId: guild.id, voiceTotalMinutes: { gt: 0 } }
-    })).sort((a,b) => b.voiceTotalMinutes - a.voiceTotalMinutes);
+        where: {
+            guildId: guild.id,
+            OR: [
+                { callActiveMinutes: { gt: 0 } },
+                { callMutedMinutes: { gt: 0 } },
+                { callDeafMinutes: { gt: 0 } },
+            ]
+        },
+    })).map(({ callActiveMinutes, callMutedMinutes, callDeafMinutes, ...ranker }) => {
+            return {
+                ...ranker,
+                voiceTotalMinutes: callActiveMinutes + callMutedMinutes + callDeafMinutes
+            }
+        }).sort((a, b) => b.voiceTotalMinutes - a.voiceTotalMinutes);
 
     if (!rankers.length) {
         return EmbedUI.createMessage('Aucune donnée', { color: 'orange' })

@@ -16,9 +16,9 @@ import { EmbedUI } from '@/ui'
 
 import { guildMemberHelper } from '@/helpers'
 import {
-    dateElapsedRatio,
     getDominantColor,
     parseUserMention,
+    timeElapsedFactor,
     xpToNextLevel
 } from '@/utils'
 import { createBoostLine } from '@/ui/components/createBoostLine'
@@ -69,13 +69,8 @@ const buildEmbed = async (member: GuildMember) => {
         xpForLevel
     } = xpToNextLevel(activityXp)
 
-    const tagBoostPercent = Math.floor(dateElapsedRatio(user?.tagAssignedAt, 14) * tagSupporterFactor * 100);
-
-    const guildBoostPercent = Math.floor(
-        (member.premiumSince
-            ? dateElapsedRatio(member.premiumSince, 7) * boosterFactor
-            : 0) * 100
-    )
+    const guildBoostPercent = (timeElapsedFactor(member?.premiumSince, 7) * boosterFactor) * 100
+    const tagBoostPercent = (timeElapsedFactor(user?.tagAssignedAt, 14) * tagSupporterFactor) * 100
 
     const guildHasTag = guild.features.find((f) => f === GuildFeature.GuildTags);
 

@@ -11,11 +11,11 @@ export default new Command({
         style: 'slashCommand'
     },
     async onMessage(message) {
-        const voiceSessions = this.client.callSessions.cache;
-        const totalSessions = voiceSessions.size;
-        const inSession = voiceSessions.has(message.author.id);
+        const sessions = this.client.callSessions.cache;
+        const totalSessions = sessions.size;
+        const inSession = sessions.has(message.author.id);
 
-        const sampleSessions = [...voiceSessions.entries()].slice(0, 10);
+        const sampleSessions = [...sessions.entries()].slice(0, 10);
 
         return await message.reply({
             embeds: [

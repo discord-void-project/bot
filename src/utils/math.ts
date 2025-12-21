@@ -33,3 +33,32 @@ export const xpToNextLevel = (xp: number) => {
         xpForLevel
     };
 }
+
+interface TimeElapsedFactorOptions {
+    inverse?: boolean;
+}
+
+export const timeElapsedFactor = (
+    date: number | string | Date | null | undefined,
+    days: number,
+    options: TimeElapsedFactorOptions = {}
+) => {
+    const { inverse = false } = options;
+
+    if (!date || days <= 0) {
+        return inverse ? 1 : 0
+    };
+
+    const timestamp = typeof date === 'number' ? date : new Date(date).getTime();
+    if (isNaN(timestamp)) {
+        return inverse ? 1 : 0;
+    }
+
+    const elapsed = Date.now() - timestamp;
+    const msInDay = 1000 * 60 * 60 * 24;
+    const ratio = elapsed / (days * msInDay);
+
+    return inverse
+        ? Math.max(ratio, 1)
+        : Math.min(ratio, 1);
+};

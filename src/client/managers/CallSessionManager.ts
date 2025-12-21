@@ -11,9 +11,10 @@ interface CallSessionFlags {
 }
 
 type CallSessionData = {
-    channelId: string
-    timestamp: number
-    flags: CallSessionFlags
+    guildId: string;
+    channelId: string;
+    timestamp: number;
+    flags: CallSessionFlags;
 }
 
 export class CallSessionManager {
@@ -46,6 +47,7 @@ export class CallSessionManager {
     start(userId: string, state: VoiceState) {
         if (state.channelId) {
             return this.cache.set(userId, {
+                guildId: state.guild.id,
                 channelId: state.channelId,
                 timestamp: Date.now(),
                 flags: this.getFlags(state),
@@ -81,6 +83,7 @@ export class CallSessionManager {
             await this.flush(userId, state.guild.id);
 
             session = {
+                guildId: state.guild.id,
                 channelId: state.channelId!,
                 timestamp: Date.now(),
                 flags: nextFlags

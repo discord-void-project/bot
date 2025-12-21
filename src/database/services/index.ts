@@ -1,7 +1,7 @@
 // Guild
 export * from './guild'
-export * from './guild-ignored-channel'
-export * from './guild-level-rewards'
+export * from './channel-blacklist'
+export * from './guild-level-reward'
 export * from './guild-module'
 // Blacklist
 export * from './blacklist'

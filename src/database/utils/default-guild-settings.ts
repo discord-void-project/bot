@@ -12,8 +12,11 @@ export const defaultEcoGuildModuleSettings = {
     // Call
     guildPointsFromCallEnabled: true,
     callGainIntervalMinutes: 15,
-    callMutedMultiplier: 0.50,
-    callDeafMultiplier: 0.0,
+    callPrivatePenalty: 0.25,
+    callMutedPenalty: 0.25,
+    callDeafPenalty: 0.35,
+    callCameraBonus: 0.15,
+    callStreamBonus: 0.15,
     callMinGain: 24,
     callMaxGain: 40,
 
@@ -45,6 +48,11 @@ export const defaultLevelGuildModuleSettings = {
 
     // Call
     isXpFromCallEnabled: true,
+    callPrivatePenalty: 0.25,
+    callMutedPenalty: 0.25,
+    callDeafPenalty: 0.35,
+    callCameraBonus: 0.15,
+    callStreamBonus: 0.15,
     callGainIntervalMinutes: 15,
 
     // Growth

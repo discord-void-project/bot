@@ -1,8 +1,6 @@
 import db from '@/database/db'
 import { PrismaUserFlagsString } from '@/database/utils'
 
-import { dateElapsedRatio } from '@/utils'
-
 import {
     UserUpdateInput,
     UserCreateInput,
@@ -97,14 +95,6 @@ class UserService {
         return await this.createOrUpdate(userId, {
             tagAssignedAt: null
         });
-    }
-
-    async getTagBoost(userId: string, minDays?: number) {
-        const user = await this.findById(userId);
-
-        if (!user?.tagAssignedAt) return 0;
-
-        return dateElapsedRatio(user.tagAssignedAt, minDays ?? 14)
     }
 }
 

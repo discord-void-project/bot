@@ -6,6 +6,7 @@ import {
     DefaultWebSocketManagerOptions,
     Guild,
     TextChannel,
+    Collection,
 } from 'discord.js'
 
 import {
@@ -26,8 +27,14 @@ export interface CustomClientMainGuildData {
     id: string;
     reportChannelId: string;
     welcomeChannelId: string;
-    deleteLogChannelId: string,
-    updateLogChannelId: string
+    deleteLogChannelId: string;
+    updateLogChannelId: string;
+}
+
+interface CustomClientSpamBufferData {
+    guildId: string;
+    lastMessageAt: number;
+    messageCount: number;
 }
 
 export class CustomClient extends Client {
@@ -43,6 +50,7 @@ export class CustomClient extends Client {
     events: EventManager;
     commands: CommandManager;
     callSessions: CallSessionManager;
+    spamBuffer: Collection<string, CustomClientSpamBufferData>;
 
     logger: Logger;
 
@@ -96,6 +104,8 @@ export class CustomClient extends Client {
         this.events = new EventManager(this);
         this.commands = new CommandManager(this);
         this.callSessions = new CallSessionManager(this);
+
+        this.spamBuffer = new Collection<string, CustomClientSpamBufferData>();
 
         this.logger = logger.use({
             prefix: (c) => c.white(`[CLIENT] <🤖>`)

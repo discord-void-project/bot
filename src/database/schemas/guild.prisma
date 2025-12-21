@@ -8,12 +8,15 @@ model Guild {
     messageDeletedAuditChannelId String?
     messageEditedAuditChannelId  String?
 
-    members        Member[]
-    levelRewards   GuildLevelReward[]
-    ignoredChannel GuildIgnoredChannel[]
-    shopItems      ShopItem[]
-    modules        GuildModule[]
-    blacklists     BlacklistGuild[]
+    members          Member[]
+    levelRewards     GuildLevelReward[]
+    channelBlacklist ChannelBlacklist[]
+    currencies       GuildCurrency[]
+    shops            Shop[]
+    items            ShopItem[]
+    modules          GuildModule[]
+    blacklists       BlacklistGuild[]
+    dailyQuests      DailyQuest[]
 
     createdAt DateTime @default(now())
 }

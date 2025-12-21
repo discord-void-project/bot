@@ -1,0 +1,18 @@
+model ShopItem {
+    guildId String
+    guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+    shopName String
+    shop     Shop   @relation(fields: [guildId, shopName], references: [guildId, name], onDelete: Cascade)
+
+    roleId      String
+    name        String?
+    description String?
+    cost        Int
+    stock       Int?
+
+    createdAt DateTime @default(now())
+
+    @@id([guildId, roleId])
+    @@map("guild_shop_item")
+}

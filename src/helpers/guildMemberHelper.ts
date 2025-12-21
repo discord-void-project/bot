@@ -17,7 +17,7 @@ export interface GuildMemberHelperGetNameOptions {
 export const guildMemberHelperSync = (member: GuildMember) => {
     return {
         getName(options?: GuildMemberHelperGetNameOptions) {
-            let name = '';
+            let name = 'unknown';
 
             const nickname = options?.nickname ?? true
             const globalName = options?.globalName ?? true

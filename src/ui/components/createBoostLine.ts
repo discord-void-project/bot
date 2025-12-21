@@ -3,7 +3,7 @@ import { applicationEmojiHelper } from '@/helpers'
 
 interface CreateBoostLineOptions {
     label: string;
-    value: number;
+    value: string | number;
     max?: number;
     arrowColor?: ArrowColorName
 }
@@ -17,8 +17,9 @@ export const createBoostLine = ({
     const emojis = applicationEmojiHelper();
     const arrow = emojis?.[`${arrowColor ?? 'white'}ArrowEmoji`]
 
-    value = Math.floor(value);
-    max = Math.floor(max ?? 0);
+    if (typeof value === 'string') {
+        value = parseInt(value);
+    }
 
     const sign = value > 0
         ? '+'
@@ -26,9 +27,11 @@ export const createBoostLine = ({
             ? '-'
             : '';
 
-    const displayValue = Math.abs(value).toLocaleString('en');
+    const displayValue = Math.abs(value).toLocaleString('en', {
+        maximumFractionDigits: 2
+    });
 
     return typeof max === 'number'
-        ? `${label} ${arrow} **${sign}${displayValue}%** / **${Math.floor(max)}% MAX**`
+        ? `${label} ${arrow} **${sign}${displayValue}%** / **${max}% MAX**`
         : `${label} ${arrow} **${sign}${displayValue}%**`;
 };
