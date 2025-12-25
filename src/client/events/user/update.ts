@@ -1,33 +1,24 @@
 import { Event } from '@/structures'
-import { userService } from '@/database/services'
-
-const LUNARIA_GUILD_ID = '1280087771540623413'
-const REWARD_ROLE_ID = '1301111729182216345'
+import { handleMemberSupporterRoleSync } from '@/client/handlers/member-supporter-role-sync'
 
 export default new Event({
     name: 'userUpdate',
-    async run({ events: [_, newUser] }) {
-        const lunaria = this.client.guilds.cache.get(LUNARIA_GUILD_ID);
+    async run({ events: [oldUser, newUser] }) {
+        const oldGuildId = oldUser.primaryGuild?.identityGuildId;
+        const newGuildId = newUser.primaryGuild?.identityGuildId;
 
-        if (lunaria) {
-            const member = lunaria.members.cache.get(newUser.id);
-            if (!member) return;
-    
-            const newGuildTagId = newUser.primaryGuild?.identityGuildId
-    
-            if (newGuildTagId !== LUNARIA_GUILD_ID && member.roles.cache.has(REWARD_ROLE_ID)) {
-                if (this.client.isDatabaseConnected) {
-                    await userService.resetTagAssignedAt(newUser.id);
-                }
-                
-                return await member.roles.remove(REWARD_ROLE_ID);
-            } else if (newGuildTagId === LUNARIA_GUILD_ID && !member.roles.cache.has(REWARD_ROLE_ID)) {
-                if (this.client.isDatabaseConnected) {
-                    await userService.setTagAssignedAt(newUser.id);
-                }
+        if (oldGuildId === newGuildId) return;
 
-                return await member.roles.add(REWARD_ROLE_ID);
-            }
+        for (const guildId of [oldGuildId, newGuildId]) {
+            if (!guildId) continue;
+
+            const guild = this.client.guilds.cache.get(guildId);
+            if (!guild) continue;
+
+            const member = guild.members.cache.get(newUser.id);
+            if (!member) continue;
+
+            await handleMemberSupporterRoleSync(member);
         }
     }
 });

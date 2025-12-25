@@ -1,198 +1,490 @@
-import { Prisma } from '@prisma/client'
-import prisma from '@/database/prisma'
-import { memberBankService } from './memberBankService';
+import db from '@/database/db'
+import {
+    MemberModel,
+    MemberUpdateInput,
+    MemberCreateInput,
+    UserCreateOrConnectWithoutGuildsInput,
+    GuildCreateOrConnectWithoutMembersInput,
+    MemberFindUniqueArgs,
+    MemberGetPayload,
+    MemberUpsertArgs,
+    MemberWhereUniqueInput,
+} from '@/database/core/models'
+import { memberVaultService, tierCapacity } from './member-vault'
+import { Prisma } from '../core/client'
 
-const find = async (
-    userId: string,
-    guildId: string,
-) => {
-    return await prisma.member.findUnique({
-        where: {
-            userId_guildId: {
-                userId,
-                guildId
-            }
-        }
-    });
+export type MemberCreateInputWithoutUserAndGuild = Omit<MemberCreateInput, 'user' | 'guild'>
+
+interface MemberWhere {
+    guildId: string
+    userId: string
 }
 
-const findOrCreate = async (
-    userId: string,
-    guildId: string
-) => {
-    const [user, guild, member] = await prisma.$transaction([
-        prisma.user.upsert({
-            where: { id: userId },
-            update: {},
-            create: { id: userId },
-        }),
-        prisma.guild.upsert({
-            where: { id: guildId },
-            update: {},
-            create: { id: guildId },
-        }),
-        prisma.member.upsert({
-            where: { userId_guildId: { userId, guildId } },
-            update: {},
-            create: { userId, guildId },
-        }),
-    ]);
+interface BaseNumberFieldData {
+    field: keyof MemberModel
+}
 
-    return { user, guild, member };
-};
+interface NumberFieldUpdateData extends BaseNumberFieldData {
+    amount: number;
+}
 
-const updateOrCreate = async <T extends Omit<Prisma.MemberUpsertArgs, 'where' | 'create' | 'update'>>(
-    userId: string,
-    guildId: string,
-    data: T & {
-        update: Prisma.MemberUpdateInput;
-        create?: Omit<Prisma.MemberCreateInput, 'user' | 'guild'>;
+interface NumberFieldSetData extends BaseNumberFieldData {
+    value: number;
+}
+
+interface NumberFieldOptions {
+    max?: number
+    min?: number
+}
+
+class MemberService {
+    constructor(public model: typeof db.member) { }
+
+    // -- Utils -- //
+    private _buildWhere(where: MemberWhere) {
+        return { userId_guildId: where }
     }
-) => {
-    const member = await prisma.member.upsert({
-        where: {
-            userId_guildId: { userId, guildId },
-        },
-        update: data.update,
-        create: {
+
+    private _connectOrCreateUserAndGuild(where: MemberWhere) {
+        const { userId, guildId } = where;
+
+        return {
             user: {
                 connectOrCreate: {
-                    create: { id: userId },
-                    where: { id: userId }
+                    where: { id: userId },
+                    create: { id: userId }
                 }
-            },
+            } as unknown as UserCreateOrConnectWithoutGuildsInput,
             guild: {
                 connectOrCreate: {
-                    create: { id: guildId },
-                    where: { id: guildId }
+                    where: { id: guildId },
+                    create: { id: guildId }
                 }
-            },
-            ...(data.create ?? {}),
-        },
-        include: data?.include
-    });
-
-    return member as unknown as typeof member & Prisma.MemberGetPayload<T>;
-}
-
-const remove = async (userId: string, guildId: string) => {
-    return await prisma.member.delete({
-        where: {
-            userId_guildId: { userId, guildId }
+            } as unknown as GuildCreateOrConnectWithoutMembersInput
         }
-    });
-}
+    }
 
-const pay = async (
-    userId: string,
-    guildId: string,
-    amount: number,
-    options: { coins?: boolean; bank?: boolean } = { coins: true }
-) => {
-    const useCoins = options.coins ?? true;
-    const useBank = options.bank ?? false;
+    private async _updateNumberField(
+        where: MemberWhere,
+        data: NumberFieldUpdateData,
+        options?: NumberFieldOptions
+    ) {
+        const member = await this.findOrCreate(where);
 
-    const { member } = await findOrCreate(userId, guildId);
-    const bankData = await memberBankService.findOrCreate(userId, guildId);
+        const currentValue = member[data.field] as number;
+        const newValue = Math.clamp(currentValue + data.amount, options?.min ?? 0, options?.max ?? Infinity);
 
-    let remaining = amount;
+        return await this.update(where, {
+            [data.field]: newValue
+        });
+    }
 
-    let coins = member.coins ?? 0;
-    let bank = bankData.funds ?? 0;
+    private async _setNumberField(
+        where: MemberWhere,
+        data: NumberFieldSetData,
+        options?: NumberFieldOptions
+    ) {
+        return this.updateOrCreate(where, {
+            [data.field]: Math.clamp(data.value, options?.min ?? 0, options?.max ?? Infinity)
+        });
+    }
 
-    if (useCoins && coins >= remaining) {
-        coins -= remaining;
-        remaining = 0;
-    } else if (useCoins && useBank) {
-        if (coins >= remaining) {
-            coins -= remaining;
-            remaining = 0;
-        } else {
-            remaining -= coins;
-            coins = 0;
+    private async _setColdown(
+        where: MemberWhere,
+        field: keyof MemberModel,
+        date: Date | undefined,
+    ) {
+        if (date === undefined) {
+            date = new Date();
+        }
 
-            if (bank >= remaining) {
-                bank -= remaining;
-                remaining = 0;
+        return await this.updateOrCreate(where, {
+            [field]: date
+        });
+    }
+
+    // -- CRUD -- //
+    async findById<Options extends Omit<MemberFindUniqueArgs, 'where'>>(
+        where: MemberWhere,
+        options?: Options
+    ) {
+        return await this.model.findUnique({
+            ...options,
+            where: this._buildWhere(where)
+        }) as Prisma.Result<typeof this.model, Options & { where: MemberWhereUniqueInput }, 'findUnique'>
+    }
+
+    async findOrCreate<Options extends Omit<MemberUpsertArgs, 'where' | 'update' | 'create'>>(
+        where: MemberWhere,
+        options?: Options & {
+            data?: Partial<MemberCreateInputWithoutUserAndGuild>
+        },
+    ) {
+        const { data, ...props } = options ?? {}
+
+        return await this.model.upsert({
+            ...props,
+            where: this._buildWhere(where),
+            update: {},
+            create: {
+                ...data,
+                ...this._connectOrCreateUserAndGuild(where)
+            }
+        }) as unknown as MemberGetPayload<Options>
+    }
+
+    async updateOrCreate<Options extends Omit<MemberUpsertArgs, 'where' | 'update' | 'create'>>(
+        where: MemberWhere,
+        data: Partial<MemberCreateInputWithoutUserAndGuild>,
+        options?: Options
+    ) {
+        return await this.model.upsert({
+            ...options,
+            where: this._buildWhere(where),
+            update: data,
+            create: {
+                ...data,
+                ...this._connectOrCreateUserAndGuild(where)
+            }
+        }) as unknown as MemberGetPayload<Options>
+    }
+
+    async create(where: MemberWhere, data?: MemberCreateInputWithoutUserAndGuild) {
+        return await this.model.create({
+            data: {
+                ...this._connectOrCreateUserAndGuild(where),
+                ...data
+            }
+        })
+    }
+
+    async update(where: MemberWhere, data: MemberUpdateInput) {
+        return await this.model.update({
+            where: this._buildWhere(where),
+            data
+        });
+    }
+
+    async delete(where: MemberWhere) {
+        return await this.model.delete({ where: this._buildWhere(where) });
+    }
+
+    // -- Activity XP -- //
+    async addActivityXp(where: MemberWhere, amount: number, options?: NumberFieldOptions) {
+        return await this._updateNumberField(where, {
+            field: 'activityXp',
+            amount
+        }, options);
+    }
+
+    async removeActivityXp(where: MemberWhere, amount: number, options?: NumberFieldOptions) {
+        return await this._updateNumberField(where, {
+            field: 'activityXp',
+            amount: -amount
+        }, options);
+    }
+
+    async setActivityXp(where: MemberWhere, value: number, options?: NumberFieldOptions) {
+        return await this._setNumberField(where, {
+            field: 'activityXp',
+            value
+        }, options);
+    }
+
+    // -- Guild Points -- //
+    async getTotalGuildCoins(where: MemberWhere) {
+        const vault = await memberVaultService.findOrCreate(where, {
+            include: {
+                member: {
+                    select: {
+                        guildCoins: true
+                    }
+                }
+            }
+        });
+
+        const inVault = vault.guildCoins;
+        const inWallet = vault.member.guildCoins;
+
+        return {
+            inVault,
+            inWallet,
+            total: inVault + inWallet
+        }
+    }
+
+    async addGuildCoins(where: MemberWhere, amount: number, options?: NumberFieldOptions) {
+        return await this._updateNumberField(where, {
+            field: 'guildCoins',
+            amount
+        }, options);
+    }
+
+    async removeGuildCoins(where: MemberWhere, amount: number, options?: NumberFieldOptions) {
+        return await this._updateNumberField(where, {
+            field: 'guildCoins',
+            amount: -amount
+        }, options);
+    }
+
+    async removeGuildCoinsWithVault(where: MemberWhere, amount: number) {
+        const vault = await memberVaultService.findOrCreate(where, {
+            include: {
+                member: {
+                    select: {
+                        guildCoins: true
+                    }
+                }
+            }
+        });
+
+        return await db.$transaction(async (tx) => {
+            const total = vault.guildCoins + vault.member.guildCoins;
+
+            if (total < amount) {
+                throw new Error('Not enough guild coins in vault and wallet');
+            }
+
+            let remainingAmount = amount;
+
+            let vaultDeduction = 0;
+            let memberDeduction = 0;
+
+            if (vault.guildCoins > 0) {
+                vaultDeduction = Math.min(vault.guildCoins, remainingAmount);
+                remainingAmount -= vaultDeduction;
+            }
+
+            if (remainingAmount > 0) {
+                memberDeduction = remainingAmount;
+            }
+
+            const vaultCtx = Object.create(memberVaultService, {
+                model: { value: tx.memberVault }
+            });
+
+            if (vaultDeduction > 0) {
+                await memberVaultService.removeGuildCoins.call(vaultCtx, where, vaultDeduction);
+            }
+
+            const memberCtx = Object.create(this, {
+                model: { value: tx.member }
+            });
+
+            if (memberDeduction > 0) {
+                await this.removeGuildCoins.call(memberCtx, where, memberDeduction);
+            }
+
+            return await this.findById.call(memberCtx, where, {
+                include: {
+                    vault: true
+                }
+            });
+        });
+    }
+
+    async setGuildCoins(where: MemberWhere, value: number, options?: NumberFieldOptions) {
+        return await this._setNumberField(where, {
+            field: 'guildCoins',
+            value
+        }, options);
+    }
+
+    async depositGuildCoins(where: MemberWhere, amount: number | 'all') {
+        const vault = await memberVaultService.findOrCreate(where, {
+            include: {
+                member: {
+                    select: {
+                        guildCoins: true,
+                    }
+                }
+            }
+        });
+
+        return await db.$transaction(async (tx) => {
+            const maxCapacity = tierCapacity[vault.capacityTier].guildCoins.capacity;
+            const currentInVault = vault.guildCoins;
+            const availableCapacity = maxCapacity - currentInVault;
+
+            if (availableCapacity <= 0) {
+                throw new Error('The vault is already full');
+            }
+
+            const inWallet = vault.member.guildCoins;
+
+            let toDeposit: number;
+
+            if (amount === 'all') {
+                toDeposit = Math.min(inWallet, availableCapacity);
             } else {
-                throw new Error('Not enough funds in coins and bank');
+                toDeposit = Math.clamp(Math.min(inWallet, amount), 0, availableCapacity);
             }
-        }
-    } else if (useCoins && coins < remaining) {
-        throw new Error('Not enough coins');
-    } else if (!useCoins && useBank) {
-        if (bank >= remaining) {
-            bank -= remaining;
-            remaining = 0;
-        } else {
-            throw new Error('Not enough bank funds');
-        }
-    } else {
-        throw new Error('No payment method specified');
-    }
 
-    if (remaining > 0) {
-        throw new Error('Not enough funds to pay');
-    }
+            const memberCtx = Object.create(this, {
+                model: { value: tx.member }
+            });
 
-    const updatedMember = await updateOrCreate(userId, guildId, {
-        update: {
-            coins,
-            bank: {
-                update: {
-                    funds: bank
+            const vaultCtx = Object.create(memberVaultService, {
+                model: { value: tx.memberVault }
+            });
+
+            await this.removeGuildCoins.call(memberCtx, where, toDeposit);
+            await memberVaultService.addGuildCoins.call(vaultCtx, where, toDeposit);
+
+            const data = await this.findById(where, {
+                include: {
+                    vault: {
+                        select: {
+                            guildCoins: true,
+                        }
+                    }
                 }
-            }
-        },
-    });
+            });
 
-    return updatedMember;
-};
+            return Object.assign(data as any, {
+                deposited: toDeposit
+            });
+        });
+    }
 
-const addXp = async (userId: string, guildId: string, amount: number) => {
-    return await memberService.updateOrCreate(userId, guildId, {
-        create: {
-            xp: amount
-        },
-        update: {
-            xp: {
-                increment: amount
-            }
-        }
-    })
+    // -- Stats -- //
+    async incrementCallPublicTime(where: MemberWhere, minutes?: number) {
+        return await this._updateNumberField(where, {
+            field: 'callPublicMinutes',
+            amount: minutes ?? 1
+        });
+    }
+
+    async incrementCallPrivateTime(where: MemberWhere, minutes?: number) {
+        return await this._updateNumberField(where, {
+            field: 'callPrivateMinutes',
+            amount: minutes ?? 1
+        });
+    }
+
+    async incrementCallActiveTime(where: MemberWhere, minutes?: number) {
+        return await this._updateNumberField(where, {
+            field: 'callActiveMinutes',
+            amount: minutes ?? 1
+        });
+    }
+
+    async incrementCallDeafTime(where: MemberWhere, minutes?: number) {
+        return await this._updateNumberField(where, {
+            field: 'callDeafMinutes',
+            amount: minutes ?? 1
+        });
+    }
+
+    async incrementCallMutedTime(where: MemberWhere, minutes?: number) {
+        return await this._updateNumberField(where, {
+            field: 'callMutedMinutes',
+            amount: minutes ?? 1
+        });
+    }
+
+    async incrementCallStreamingTime(where: MemberWhere, minutes?: number) {
+        return await this._updateNumberField(where, {
+            field: 'callStreamingMinutes',
+            amount: minutes ?? 1
+        });
+    }
+
+    async incrementCallCameraTime(where: MemberWhere, minutes?: number) {
+        return await this._updateNumberField(where, {
+            field: 'callCameraMinutes',
+            amount: minutes ?? 1
+        });
+    }
+
+    async incrementMessageCount(where: MemberWhere, amount?: number) {
+        return await this._updateNumberField(where, {
+            field: 'messageCount',
+            amount: amount ?? 1
+        });
+    }
+
+    async incrementDailyStreak(where: MemberWhere) {
+        return await this._updateNumberField(where, {
+            field: 'dailyStreak',
+            amount: 1
+        });
+    }
+
+    async resetDailyStreak(where: MemberWhere) {
+        return await this._setNumberField(where, {
+            field: 'dailyStreak',
+            value: 1
+        });
+    }
+
+    async resetStats(where: MemberWhere) {
+        return await this.updateOrCreate(where, {
+            callActiveMinutes: 0,
+            callDeafMinutes: 0,
+            callMutedMinutes: 0,
+            messageCount: 0,
+            dailyStreak: 0
+        });
+    }
+
+    // -- Cooldowns -- //
+    async setLastAttendedAt(where: MemberWhere, date?: Date | undefined) {
+        return await this._setColdown(where, 'lastAttendedAt', date);
+    }
+
+    async setLastWorkedAt(where: MemberWhere, date?: Date | undefined) {
+        return await this._setColdown(where, 'lastWorkedAt', date);
+    }
+
+    async setLastRobAt(where: MemberWhere, date?: Date | undefined) {
+        return await this._setColdown(where, 'lastRobAt', date);
+    }
+
+    async setLastRobbedAt(where: MemberWhere, date?: Date | undefined) {
+        return await this._setColdown(where, 'lastRobbedAt', date);
+    }
+
+    async setLastHeistAt(where: MemberWhere, date?: Date | undefined) {
+        return await this._setColdown(where, 'lastHeistAt', date);
+    }
+
+    async setLastHeistedAt(where: MemberWhere, date?: Date | undefined) {
+        return await this._setColdown(where, 'lastHeistedAt', date);
+    }
+
+    async resetAllColdowns(where: MemberWhere) {
+        return await this.updateOrCreate(where, {
+            lastAttendedAt: null,
+            lastWorkedAt: null,
+            lastRobbedAt: null,
+        });
+    }
+
+    // -- Leaderboard -- //
+    async getActivityXpRank(where: MemberWhere) {
+        const member = await this.findOrCreate(where);
+
+        const [higher, total] = await Promise.all([
+            this.model.count({
+                where: {
+                    guildId: where.guildId,
+                    activityXp: { gt: member.activityXp }
+                }
+            }),
+            this.model.count({
+                where: {
+                    guildId: where.guildId,
+                    activityXp: { gt: 0 }
+                }
+            })
+        ]);
+
+        return {
+            rank: higher + 1,
+            total
+        };
+    }
 }
 
-const removeXp = async (userId: string, guildId: string, amount: number) => {
-    return await memberService.updateOrCreate(userId, guildId, {
-        create: {
-            xp: amount
-        },
-        update: {
-            xp: {
-                decrement: amount
-            }
-        }
-    })
-}
-
-const setXp = async (userId: string, guildId: string, amount: number) => {
-    return await memberService.updateOrCreate(userId, guildId, {
-        create: {
-            xp: amount
-        },
-        update: {
-            xp: amount
-        }
-    })
-}
-
-export const memberService = {
-    find,
-    updateOrCreate,
-    findOrCreate,
-    remove,
-    pay,
-    addXp,
-    removeXp,
-    setXp
-}
+export const memberService = new MemberService(db.member);

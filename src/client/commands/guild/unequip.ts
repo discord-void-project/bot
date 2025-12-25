@@ -2,28 +2,20 @@ import { Command } from '@/structures/Command'
 import { GuildMember, MessageFlags } from 'discord.js'
 
 import { shopItemService } from '@/database/services'
-import { mainGuildConfig } from '@/client/config'
 
 import { EmbedUI } from '@/ui/EmbedUI'
 import { createActionRow, createButton } from '@/ui/components/common'
 
 export default new Command({
-    description: 'unequip a role color',
     nameLocalizations: {
         fr: 'déséquiper'
     },
+    description: '🎨 Unequip a shop role',
     descriptionLocalizations: {
-        fr: "déséquiper un rôle couleur"
-    },
-    access: {
-        guild: {
-            authorizedIds: [
-                mainGuildConfig.id
-            ]
-        }
+        fr: '🎨 Retirer un rôle de boutique'
     },
     async onInteraction(interaction) {
-        const allItems = await shopItemService.findMany(interaction.guild!.id);
+        const allItems = await shopItemService.allItems(interaction.guild.id);
         const member = interaction.member as GuildMember
 
         const roles = allItems.filter((f) => member.roles.cache.has(f.roleId));
@@ -31,18 +23,17 @@ export default new Command({
         if (!roles.length) {
             return await interaction.reply({
                 embeds: [
-                    EmbedUI.createMessage(`Vous n'avez aucun rôle payant d'équipé !`, { color: 'red' })
+                    EmbedUI.createErrorMessage(`Vous n'avez aucun rôle de boutique d'équipé !`)
                 ]
             });
         }
 
         const msg = await interaction.reply({
             embeds: [
-                EmbedUI.createMessage({
-                    color: 'orange',
+                EmbedUI.createWarnMessage({
                     description: [
                         `Voulez-vous vraiment déséquipé votre rôle couleur ?`,
-                        '-# Remarque : une fois le rôle supprimé vous ne serez pas **remboursé**'
+                        '-# 💡 Une fois le rôle supprimé vous ne serez pas **remboursé**'
                     ].join('\n')
                 })
             ],
@@ -68,20 +59,20 @@ export default new Command({
 
                 return await res.reply({
                     embeds: [
-                        EmbedUI.createMessage(`Le rôle couleur vous a bien été déséquipé !`, { color: 'green' })
+                        EmbedUI.createSuccessMessage(`Le rôle couleur vous a bien été déséquipé !`)
                     ]
                 });
             }
 
             return await res.reply({
                 embeds: [
-                    EmbedUI.createMessage(`Opération annnuler !`, { color: 'green' })
+                    EmbedUI.createWarnMessage(`Opération annnuler !`)
                 ]
             });
         } catch {
             return await msg.edit({
                 embeds: [
-                    EmbedUI.createMessage(`Une erreur est survenu`, { color: 'red' })
+                    EmbedUI.createErrorMessage(`Une erreur est survenu`)
                 ]
             })
         }

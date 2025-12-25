@@ -1,82 +1,101 @@
-import { Prisma } from '@prisma/client'
+import db from '@/database/db'
+import { PrismaUserFlagsString } from '@/database/utils'
 
-import prisma from '@/database/prisma'
-import { UserFlagsString } from '../utils/UserFlags'
-import { dateElapsedRatio } from '@/utils';
+import {
+    UserUpdateInput,
+    UserCreateInput,
+} from '@/database/core/models/User'
 
-const find = async (userId: string) => {
-    return await prisma.user.findUnique({
-        where: { id: userId }
-    });
+export type UserCreateInputWithoutId = Omit<UserCreateInput, 'id'>;
+
+class UserService {
+    constructor(
+        public model: typeof db.user
+    ) {}
+
+    async findById(userId: string) {
+        return await this.model.findUnique({ where: { id: userId } });
+    }
+
+    async findOrCreate(userId: string, data?: Partial<UserCreateInputWithoutId>) {
+        return await this.model.upsert({
+            where: { id: userId },
+            update: {},
+            create: { id: userId, ...data }
+        });
+    }
+
+    async createOrUpdate(userId: string, data: Partial<UserCreateInputWithoutId>) {
+        return await this.model.upsert({
+            where: { id: userId },
+            update: data,
+            create: { id: userId, ...data }
+        });
+    }
+
+    async create(userId: string, data: UserCreateInputWithoutId) {
+        return await this.model.create({ data: { id: userId, ...data } });
+    }
+
+    async update(userId: string, data: UserUpdateInput) {
+        return await this.model.update({
+            where: { id: userId },
+            data
+        });
+    }
+
+    async delete(userId: string) {
+        return await this.model.delete({
+            where: { id: userId }
+        });
+    }
+
+    //-- Flags --//
+    async addFlag(userId: string, flag: PrismaUserFlagsString) {
+        return await db.$transaction(async (tx) => {
+            const ctx = Object.create(this, {
+                model: { value: tx.user }
+            });
+
+            const user = await this.findOrCreate.call(ctx, userId);
+
+            return await this.update.call(ctx, userId, {
+                flags: user.flags.add(flag).bitfield
+            });
+        });
+    }
+
+    async removeFlag(userId: string, flag: PrismaUserFlagsString) {
+        return await db.$transaction(async (tx) => {
+            const ctx = Object.create(this, {
+                model: { value: tx.user }
+            });
+
+            const user = await this.findById.call(ctx, userId);
+            if (!user) {
+                return await this.create.call(ctx, userId);
+            }
+
+            return await this.update.call(ctx, userId, {
+                flags: user.flags.remove(flag).bitfield
+            });
+        });
+    }
+
+    //-- Tag --//
+    async setTagAssignedAt(userId: string, date?: Date) {
+        date ??= new Date();
+
+        return await this.createOrUpdate(userId, {
+            tagAssignedAt: date
+        });
+    }
+
+    async resetTagAssignedAt(userId: string) {
+        return await this.createOrUpdate(userId, {
+            tagAssignedAt: null
+        });
+    }
 }
 
-const update = async (userId: string, data: Prisma.UserUpdateInput) => {
-    return await prisma.user.update({
-        where: { id: userId },
-        data
-    });
-}
-
-const findOrCreate = async (userId: string) => {
-    return await prisma.user.upsert({
-        where: { id: userId },
-        create: { id: userId },
-        update: {},
-    });
-}
-
-const addFlag = async (userId: string, flag: UserFlagsString) => {
-    const user = await findOrCreate(userId);
-
-    return await update(userId, {
-        flags: user.flags.add(flag).bitfield
-    });
-}
-
-const removeFlag = async (userId: string, flag: UserFlagsString) => {
-    const user = await findOrCreate(userId);
-
-    return await prisma.user.update({
-        where: { id: userId },
-        data: {
-            flags: user.flags.remove(flag).bitfield
-        }
-    });
-}
-
-const resetTagAssignedAt = async (userId: string) => {
-    return await prisma.user.upsert({
-        where: { id: userId },
-        update: { tagAssignedAt: null },
-        create: { id: userId, tagAssignedAt: null }
-    });
-}
-
-const setTagAssignedAt = async (userId: string, date?: Date) => {
-    date ??= new Date();
-
-    return await prisma.user.upsert({
-        where: { id: userId },
-        update: { tagAssignedAt: date },
-        create: { id: userId, tagAssignedAt: date }
-    });
-}
-
-const getTagBoost = async (userId: string, minDays?: number): Promise<number> => {
-    const user = await userService.find(userId);
-
-    if (!user?.tagAssignedAt) return 0;
-
-    return dateElapsedRatio(user.tagAssignedAt, minDays ?? 14)
-}
-
-export const userService = {
-    find,
-    update,
-    findOrCreate,
-    addFlag,
-    removeFlag,
-    resetTagAssignedAt,
-    setTagAssignedAt,
-    getTagBoost
-}
+export const userService = new UserService(db.user);

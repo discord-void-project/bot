@@ -1,6 +1,5 @@
 <div align="center">
     <h1>VØID</h1>
-    <h6>(I currently don't have a r.i.p logo)</h6>
 	<p>
         <img alt="GitHub Release" src="https://img.shields.io/github/v/release/discord-void-project/bot?include_prereleases&sort=date&display_name=tag&style=flat&label=version&color=6886ff">
         <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/discord-void-project/bot?logo=github">
@@ -23,7 +22,7 @@
 
 Before installing the project, make sure you have:
 
-1. **Node.js** `>=23.x` and **npm** or **pnpm** installed
+1. **Node.js** `>=24.x` and **npm** or **pnpm** installed
 2. A **MySQL** database (or adjust `DATABASE_URL` to your database type)
 3. A **Discord Application** with a bot created:
    * Go to [Discord Developer Portal](https://discord.com/developers/applications)

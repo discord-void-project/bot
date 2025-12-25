@@ -1,10 +1,9 @@
 import { Command } from '@/structures/Command'
 
-import { guildSettingsService, memberService } from '@/database/services'
-import { mainGuildConfig } from '@/client/config'
-
 import { EmbedUI } from '@/ui/EmbedUI'
-import { createCooldown } from '@/utils'
+import { createCooldown, formatTimeLeft } from '@/utils'
+import { guildModuleService, memberService } from '@/database/services'
+import { defaultEcoGuildModuleSettings } from '@/database/utils'
 
 interface HandleWorkContext {
     userId: string;
@@ -19,25 +18,29 @@ const handleWorkCommand = async ({
     username,
     reply
 }: HandleWorkContext) => {
-    const { member } = await memberService.findOrCreate(userId, guildId);
-    const ecoSettings = await guildSettingsService.findOrCreate(guildId, 'eco');
+    const memberKey = { userId, guildId }
 
-    const COOLDOWN = (ecoSettings.workCooldown ?? 30) * 60 * 1000;
-    const MIN_REWARD = ecoSettings.workMinGain ?? 25;
-    const MAX_REWARD = ecoSettings.workMaxGain ?? 75;
+    const memberDatabase = await memberService.findOrCreate(memberKey);
+    const guildEcoModule = await guildModuleService.findById({
+        guildId,
+        moduleName: 'eco'
+    });
 
-    const { isActive, expireTimestamp } = createCooldown(member.lastWorkAt, COOLDOWN);
-    const now = Date.now();
+    const ecoSettings = guildEcoModule?.settings ?? defaultEcoGuildModuleSettings;
+
+    const COOLDOWN = ecoSettings.workCooldownMinutes * 60 * 1000; 
+    const MIN_REWARD = ecoSettings.workMinGain;
+    const MAX_REWARD = ecoSettings.workMaxGain;
+
+    const { isActive, expireTimestamp } = createCooldown(memberDatabase.lastWorkedAt, COOLDOWN);
 
     if (isActive) {
-        const remaining = expireTimestamp - now;
-        const minutesLeft = Math.ceil(remaining / (1000 * 60));
         return reply({
             embeds: [
                 EmbedUI.createMessage({
                     color: 'red',
                     title: '⏳ Travail déjà effectué',
-                    description: `Vous devez attendre encore **${minutesLeft} min** avant de retravailler`,
+                    description: `Vous devez attendre encore ${formatTimeLeft(expireTimestamp)} avant de retravailler`,
                 }),
             ],
         });
@@ -59,12 +62,8 @@ const handleWorkCommand = async ({
         phraseBonus = `✨ Aujourd'hui, vous avez un petit bonus de **${bonus} pièces** !`;
     }
 
-    await memberService.updateOrCreate(userId, guildId, {
-        update: {
-            coins: { increment: reward },
-            lastWorkAt: new Date(),
-        },
-    });
+    await memberService.setLastWorkedAt(memberKey);
+    await memberService.addGuildCoins(memberKey, reward);
 
     const phrases = [
         `Bravo ! Vous avez travaillé dur aujourd'hui et gagné **${reward} pièces** !`,
@@ -86,12 +85,12 @@ const handleWorkCommand = async ({
 };
 
 export default new Command({
-    description: 'work to earn daily coins',
+    description: '👷 Work to earn daily server coins',
     nameLocalizations: {
         fr: 'travail',
     },
     descriptionLocalizations: {
-        fr: "travail pour gagner des pièces quotidiennement"
+        fr: '👷 Travail pour gagner des pièces de serveur quotidiennement'
     },
     messageCommand: {
         style: 'flat',
@@ -99,9 +98,11 @@ export default new Command({
     },
     access: {
         guild: {
-            authorizedIds: [
-                mainGuildConfig.id
-            ]
+            modules: {
+                eco: {
+                    isWorkEnabled: true,
+                }
+            }
         }
     },
     async onInteraction(interaction) {

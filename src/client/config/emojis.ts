@@ -28,7 +28,19 @@ export type ApplicationEmojiName = 'voiceChannel'
     | 'yellowRect'
     | 'redRect'
     | 'indogoRect'
-    | 'empty';
+    | 'empty'
+    | 'abyssMarked'
+    | 'abyssUnmarked'
+    | 'abyssLine';
+
+export type ArrowColorName = 'red'
+    | 'green'
+    | 'purple'
+    | 'blue'
+    | 'yellow'
+    | 'cyan'
+    | 'white'
+    | 'pink';
 
 export const applicationEmojiDev : Record<ApplicationEmojiName, string> = {
     voiceChannel: '1366513582199541800',
@@ -68,6 +80,10 @@ export const applicationEmojiDev : Record<ApplicationEmojiName, string> = {
     online: '1366512708853174343',
     idle: '1366512718399537232',
     dnd: '1366512728239509504',
+
+    abyssMarked: '1447983820250021888',
+    abyssUnmarked: '1447983183663595562',
+    abyssLine: '1447984625359130685'
 }
 
 export const applicationEmojiProd: Record<ApplicationEmojiName, string>  = {
@@ -108,6 +124,10 @@ export const applicationEmojiProd: Record<ApplicationEmojiName, string>  = {
     online: '1342979602468962487',
     idle: '1342979785835544576',
     dnd: '1342979809713848412',
+
+    abyssMarked: '',
+    abyssUnmarked: '',
+    abyssLine: ''
 } as const
 
 export const currentApplicationEmoji = process.env.ENV === 'DEV'

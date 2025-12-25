@@ -1,7 +1,7 @@
 import { Command } from '@/structures/Command'
 import { ApplicationCommandOptionType } from 'discord.js'
 
-import { guildService } from '@/database/services'
+import { blacklistService } from '@/database/services'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 export default new Command({
@@ -42,7 +42,7 @@ export default new Command({
 
         const formatTimestamp = (date: Date) => Math.floor(date.getTime() / 1000);
 
-        let blacklist = await guildService.findUser(user.id);
+        let blacklist = await blacklistService.findById(user.id);
         if (blacklist) {
             return await interaction.reply({
                 embeds: [
@@ -58,7 +58,7 @@ export default new Command({
         const mod = interaction.user;
         const reason = interaction.options.getString('reason') ?? 'Aucune raison spécifiée';
 
-        blacklist = await guildService.addBlacklist({
+        blacklist = await blacklistService.add({
             modId: mod.id,
             userId: user.id,
             reason,

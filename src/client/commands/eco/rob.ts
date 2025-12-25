@@ -1,22 +1,19 @@
-import { Command } from '@/structures/Command'
 import { ApplicationCommandOptionType, MessageFlags } from 'discord.js'
+import { Command } from '@/structures/Command'
 
-import { memberService } from '@/database/services'
-import { mainGuildConfig } from '@/client/config'
-import { createCooldown } from '@/utils'
+import db from '@/database/db'
+import { guildModuleService, memberService } from '@/database/services'
+
+import { createCooldown, formatTimeLeft } from '@/utils'
 import { EmbedUI } from '@/ui/EmbedUI'
-import { memberBankService } from '@/database/services/memberBankService'
-
-const SUCCESS_CHANCE = 0.2;
-const STEAL_PERCENTAGE = 0.25;
 
 export default new Command({
     nameLocalizations: {
         fr: 'voler'
     },
-    description: 'rob',
+    description: '🕵️ Attempt to steal coins from another player',
     descriptionLocalizations: {
-        fr: 'voler'
+        fr: '🕵️ Tenter de voler des pièces à un autre joueur'
     },
     slashCommand: {
         arguments: [
@@ -39,15 +36,22 @@ export default new Command({
     },
     access: {
         guild: {
-            authorizedIds: [
-                mainGuildConfig.id
-            ]
+            modules: {
+                eco: {
+                    isRobEnabled: true
+                }
+            }
         }
     },
     async onInteraction(interaction) {
         const targetUser = interaction.options.getUser('target', true);
         const robberId = interaction.user.id;
-        const guildId = interaction.guild!.id;
+        const guildId = interaction.guild.id;
+
+        const robberKey = {
+            userId: robberId,
+            guildId,
+        }
 
         if (targetUser.bot) {
             return interaction.reply({
@@ -73,88 +77,96 @@ export default new Command({
             });
         }
 
-        const { member } = await memberService.findOrCreate(robberId, guildId);
+        let robber = await memberService.findOrCreate(robberKey);
+        const { settings: ecoSettings } = await guildModuleService.findOrCreate({
+            guildId,
+            moduleName: 'eco'
+        });
 
-        const COOLDOWN = 60 * 60 * 1000;
-
-        const { isActive } = createCooldown(member.lastRobAt, COOLDOWN);
-
-        if (isActive) {
-            return interaction.reply({
+        const { isActive: canRob, expireTimestamp } = createCooldown(robber.lastRobAt, ecoSettings.robCooldown);
+        if (canRob) {
+            return await interaction.reply({
                 embeds: [
                     EmbedUI.createMessage({
                         color: 'red',
                         title: '⏳ Cooldown',
-                        description: `Tu dois attendre **1h** avant de voler à nouveau !`,
+                        description: `Tu dois attendre ${formatTimeLeft(expireTimestamp)} avant de voler à nouveau !`,
                     }),
                 ],
                 flags: MessageFlags.Ephemeral
             });
         }
 
-        const robberBank = await memberBankService.findOrCreate(robberId, guildId);
+        const targetKey = {
+            userId: targetUser.id,
+            guildId
+        }
 
-        const { member: robber } = await memberService.findOrCreate(robberId, guildId);
-        const { member: target } = await memberService.findOrCreate(targetUser.id, guildId);
+        const target = await memberService.findOrCreate(targetKey);
 
-        const success = Math.random() < SUCCESS_CHANCE;
-        const stolenAmount = Math.floor(target.coins * STEAL_PERCENTAGE);
+        if (!target.guildCoins) {
+            return await interaction.reply({
+                embeds: [
+                    EmbedUI.createMessage({
+                        color: 'orange',
+                        description: `Cette personne n'a pas l'air riche, je devrais changer de cible`,
+                    }),
+                ],
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        const { isActive: isAlreadyRobbed } = createCooldown(target.lastRobbedAt, ecoSettings.robbedCooldown);
+        if (isAlreadyRobbed) {
+            return await interaction.reply({
+                embeds: [
+                    EmbedUI.createMessage({
+                        color: 'orange',
+                        description: `Mhhh.. On dirait bien que cette personne es vigilante, essayons plus tard 🤔`,
+                    }),
+                ],
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        const success = Math.random() < (ecoSettings.robSuccessChance);
+
+        await memberService.setLastRobAt(robberKey);
+        await memberService.setLastRobbedAt(targetKey);
 
         if (success) {
-            await memberService.updateOrCreate(robberId, guildId, {
-                update: {
-                    coins: { increment: stolenAmount },
-                    lastRobAt: new Date()
-                },
+            const stolenAmount = Math.floor(target.guildCoins * ecoSettings.robStealPercentage);
+
+            await db.$transaction(async (tx) => {
+                const ctx = Object.create(memberService, {
+                    model: { value: tx.member }
+                });
+
+                await memberService.addGuildCoins.call(ctx, robberKey, stolenAmount);
+                await memberService.removeGuildCoins.call(ctx, targetKey, stolenAmount);
             });
 
-            await memberService.updateOrCreate(targetUser.id, guildId, {
-                update: {
-                    coins: { decrement: stolenAmount },
-                },
-            });
-
-            return interaction.reply({
+            return await interaction.reply({
                 embeds: [
                     EmbedUI.createMessage({
                         color: 'green',
                         title: '🕵️‍♂️ Vol réussi !',
-                        description: `Tu as volé **${stolenAmount}** pièces à **${targetUser.username}** !`,
+                        description: `Tu as volé **${stolenAmount.toLocaleString('en')}** pièces à **${targetUser.username}** !`,
                     }),
                 ],
             });
         } else {
-            const totalAssets = robber.coins + robberBank.funds;
-            const penalty = Math.floor(totalAssets * 0.02);
+            const { total } = await memberService.getTotalGuildCoins(robberKey);
+            const penalty = Math.floor(total * 0.02);
 
-            let remainingPenalty = penalty;
-
-            const coinsDecrement = Math.min(robber.coins, remainingPenalty);
-            remainingPenalty -= coinsDecrement;
-
-            const bankDecrement = Math.min(robberBank.funds, remainingPenalty);
-            remainingPenalty -= bankDecrement;
-
-            await memberService.updateOrCreate(robberId, guildId, {
-                update: {
-                    coins: { decrement: coinsDecrement },
-                    bank: {
-                        update: {
-                            funds: {
-                                decrement: bankDecrement
-                            }
-                        }
-                    },
-                    lastRobAt: new Date(),
-                },
-            });
+            await memberService.removeGuildCoinsWithVault(robberKey, penalty);
 
             return interaction.reply({
                 embeds: [
                     EmbedUI.createMessage({
                         color: 'red',
                         title: '🚨 Vol échoué !',
-                        description: `Tu t'es fait attraper et tu perds **${coinsDecrement + bankDecrement}** pièces en amende !`,
+                        description: `Tu t'es fait attraper et tu perds **${penalty.toLocaleString('en')}** pièces en amende !`,
                     }),
                 ],
             });

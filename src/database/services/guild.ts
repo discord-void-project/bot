@@ -1,122 +1,69 @@
-import { BlacklistStatus, Prisma } from '@prisma/client'
-import prisma from '@/database/prisma'
+import db from '@/database/db'
 
-const findUser = async (userId: string) => {
-    return await prisma.blacklist.findUnique({
-        where: { userId }
-    });
-}
+import {
+    GuildUpdateInput,
+    GuildCreateInput,
+} from '@/database/core/models/Guild'
 
-const addBlacklist = async (options: Prisma.BlacklistUncheckedCreateInput) => {
-    const { userId, modId, ...data } = options;
+export type GuildCreateInputWithoutId = Omit<GuildCreateInput, 'id'>;
 
-    return await prisma.blacklist.upsert({
-        where: { userId },
-        create: {
-            ...data,
-            user: {
-                connectOrCreate: {
-                    where: { id: userId },
-                    create: { id: userId }
-                }
-            },
-            mod: {
-                connectOrCreate: {
-                    where: { id: modId },
-                    create: { id: modId }
-                }
-            },
-        },
-        update: {},
-        include: {
-            mod: true,
-            user: true,
-        }
-    });
-}
+class GuildService {
+    constructor(public model: typeof db.guild) { }
 
-const removeBlacklist = async (userId: string) => {
-    const user = await findUser(userId);
-    if (user) {
-        return await prisma.blacklist.delete({
-            where: { userId }
+    // -- CRUD -- //
+    async findById(guildId: string) {
+        return await this.model.findUnique({ where: { id: guildId } });
+    }
+
+    async findOrCreate(guildId: string, data?: Partial<GuildCreateInputWithoutId>) {
+        return await this.model.upsert({
+            where: { id: guildId },
+            update: {},
+            create: { id: guildId, ...data }
         });
     }
 
-    return null;
-}
-
-const updateBlacklistStatus = async (userId: string, status: BlacklistStatus) => {
-    return await prisma.blacklist.update({
-        where: { userId },
-        data: { status }
-    });
-}
-
-const findUserGuildBlacklist = async (guildId: string, userId: string) => {
-    return await prisma.blacklistGuild.findUnique({
-        where: { guildId, userId },
-        include: {
-            user: {
-                select: {
-                    reason: true,
-                    blacklistAt: true,
-                }
-            }
-        }
-    });
-}
-
-const authorizeUserGuildBlacklist = async (guildId: string, userId: string) => {
-    const blacklist = await findUser(userId);
-    if (!blacklist) return null;
-
-    let guildBlacklist = await findUserGuildBlacklist(guildId, userId);
-    if (guildBlacklist) return guildBlacklist;
-    
-    return await prisma.blacklistGuild.create({
-        data: {
-            accepted: true,
-            guild: {
-                connect: {
-                    id: guildId
-                }
-            },
-            user: {
-                connect: { userId }
-            }
-        },
-        include: {
-            user: {
-                select: {
-                    reason: true,
-                    blacklistAt: true,
-                }
-            }
-        }
-    });
-}
-
-const unauthorizeUserGuildBlacklist = async (guildId: string, userId: string) => {
-    let guildBlacklist = await findUserGuildBlacklist(guildId, userId);
-    if (guildBlacklist) {
-        const data = await prisma.blacklistGuild.delete({
-            where: { userId, guildId }
+    async createOrUpdate(guildId: string, data: Partial<GuildCreateInputWithoutId>) {
+        return await this.model.upsert({
+            where: { id: guildId },
+            update: data,
+            create: { id: guildId, ...data }
         });
+    }
 
-        return {
-            ...data,
-            accepted: false
-        }
+    async create(guildId: string, data: GuildCreateInputWithoutId) {
+        return await this.model.create({ data: { id: guildId, ...data } });
+    }
+
+    async update(guildId: string, data: GuildUpdateInput) {
+        return await this.model.update({
+            where: { id: guildId },
+            data
+        });
+    }
+
+    async delete(guildId: string) {
+        return await this.model.delete({
+            where: { id: guildId }
+        });
+    }
+
+    // -- Setter -- //
+    async setWelcomeChannel(guildId: string, channelId: string | null) {
+        return await this.createOrUpdate(guildId, { welcomeChannelId: channelId });
+    }
+
+    async setSupportRole(guildId: string, roleId: string | null) {
+        return await this.createOrUpdate(guildId, { supportRoleId: roleId });
+    }
+
+    async setMessageDeletedAuditChannel(guildId: string, channelId: string | null) {
+        return await this.createOrUpdate(guildId, { messageDeletedAuditChannelId: channelId });
+    }
+
+    async setMessageEditedAuditChannel(guildId: string, channelId: string | null) {
+        return await this.createOrUpdate(guildId, { messageEditedAuditChannelId: channelId });
     }
 }
 
-export const guildService = {
-    findUser,
-    addBlacklist,
-    removeBlacklist,
-    updateBlacklistStatus,
-    findUserGuildBlacklist,
-    authorizeUserGuildBlacklist,
-    unauthorizeUserGuildBlacklist
-}
+export const guildService = new GuildService(db.guild);

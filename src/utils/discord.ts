@@ -1,6 +1,6 @@
 import {
     escapeMarkdown,
-    MessageMentions
+    MessageMentions,
 } from 'discord.js'
 
 export const escapeAllMarkdown = (text: string) => escapeMarkdown(text, {
@@ -19,6 +19,10 @@ export const escapeAllMarkdown = (text: string) => escapeMarkdown(text, {
     strikethrough: true,
     underline: true
 });
+
+export const escapeSafe = (str: string) => {
+    return str.replace(/[^\p{Script=Latin}\p{N}._\- :]/gu, '');
+};
 
 export const parseUserMention = (mention: string | null) => {
     if (!mention) return null;

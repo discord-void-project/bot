@@ -1,13 +1,13 @@
-import { Prisma } from '@prisma/client'
+import { Prisma } from '../core/client'
 import { xpToLevel } from '@/utils/math'
 
 export const memberExtension = Prisma.defineExtension({
     result: {
         member: {
-            level: {
-                needs: { xp: true },
-                compute({ xp }) {
-                    return xpToLevel(xp);
+            activityLevel: {
+                needs: { activityXp: true },
+                compute({ activityXp }) {
+                    return xpToLevel(activityXp);
                 },
             },
         },

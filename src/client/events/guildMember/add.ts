@@ -1,5 +1,5 @@
 import { Event } from '@/structures'
-import { guildService } from '@/database/services'
+import { blacklistGuildService, blacklistService } from '@/database/services'
 
 import { createActionRow, createButton } from '@/ui/components/common'
 import { EmbedUI } from '@/ui/EmbedUI'
@@ -7,14 +7,16 @@ import { EmbedUI } from '@/ui/EmbedUI'
 export default new Event({
     name: 'guildMemberAdd',
     async run({ events: [member] }) {
-        if (process.env.ENV === 'DEV') return;
-
         const guild = member.guild;
 
         if (member.bannable && guild.safetyAlertsChannel) {
-            const blacklist = await guildService.findUser(member.id);
+            const blacklist = await blacklistService.findById(member.id);
             if (blacklist) {
-                const guildBlacklist = await guildService.findUserGuildBlacklist(guild.id, member.id);
+                const guildBlacklist = await blacklistGuildService.findById({
+                    guildId: guild.id,
+                    userId: member.id
+                });
+
                 if (!guildBlacklist?.accepted) {
                     await member.ban({
                         reason: blacklist.reason ?? 'Aucune raisons spécifiée'
@@ -53,6 +55,8 @@ export default new Event({
                 }
             }
         }
+
+        if (process.env.ENV === 'DEV') return;
 
         if (this.client.mainGuild.id === guild.id) {
             await this.client.mainGuild.welcomeChannel.send({

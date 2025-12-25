@@ -9,3 +9,4 @@ dist
 .vscode
 
 src/**/test.*
+src/database/core/*
