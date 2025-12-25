@@ -1,8 +1,9 @@
 import { Command } from '@/structures/Command'
 
 import { EmbedUI } from '@/ui/EmbedUI'
-import { createCooldown } from '@/utils'
-import { memberService } from '@/database/services'
+import { createCooldown, formatTimeLeft } from '@/utils'
+import { guildModuleService, memberService } from '@/database/services'
+import { defaultEcoGuildModuleSettings } from '@/database/utils'
 
 interface HandleWorkContext {
     userId: string;
@@ -19,24 +20,27 @@ const handleWorkCommand = async ({
 }: HandleWorkContext) => {
     const memberKey = { userId, guildId }
 
-    const member = await memberService.findOrCreate(memberKey);
+    const memberDatabase = await memberService.findOrCreate(memberKey);
+    const guildEcoModule = await guildModuleService.findById({
+        guildId,
+        moduleName: 'eco'
+    });
 
-    const COOLDOWN = (30) * 60 * 1000;
-    const MIN_REWARD = 25;
-    const MAX_REWARD = 75;
+    const ecoSettings = guildEcoModule?.settings ?? defaultEcoGuildModuleSettings;
 
-    const { isActive, expireTimestamp } = createCooldown(member.lastWorkedAt, COOLDOWN);
-    const now = Date.now();
+    const COOLDOWN = ecoSettings.workCooldownMinutes * 60 * 1000; 
+    const MIN_REWARD = ecoSettings.workMinGain;
+    const MAX_REWARD = ecoSettings.workMaxGain;
+
+    const { isActive, expireTimestamp } = createCooldown(memberDatabase.lastWorkedAt, COOLDOWN);
 
     if (isActive) {
-        const remaining = expireTimestamp - now;
-        const minutesLeft = Math.ceil(remaining / (1000 * 60));
         return reply({
             embeds: [
                 EmbedUI.createMessage({
                     color: 'red',
                     title: '⏳ Travail déjà effectué',
-                    description: `Vous devez attendre encore **${minutesLeft} min** avant de retravailler`,
+                    description: `Vous devez attendre encore ${formatTimeLeft(expireTimestamp)} avant de retravailler`,
                 }),
             ],
         });

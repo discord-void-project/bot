@@ -188,8 +188,7 @@ const buildShopView = ({
                     if (cost <= 0) {
                         lines.push(`**↳** 🏷️ Prix ${whiteArrowEmoji} **GRATUIT**`);
                     } else {
-                        lines.push(`**↳** 🏷️ Prix ${whiteArrowEmoji} ${
-                            shop.useTagDiscount && (tagRolePriceDiscount > 0)
+                        lines.push(`**↳** 🏷️ Prix ${whiteArrowEmoji} ${shop.useTagDiscount && (tagRolePriceDiscount > 0)
                                 ? `~~${cost.toLocaleString('en')}~~ **${Math.floor(cost * (1 - tagRolePriceDiscount)).toLocaleString('en')} -${(tagRolePriceDiscount * 100).toFixed(2)}%**`
                                 : `**${cost.toLocaleString('en')}**`
                             }`);
@@ -220,8 +219,7 @@ const buildShopView = ({
                             if (cost <= 0) {
                                 description = `🏷️ GRATUIT`
                             } else {
-                                description = `🏷️ ${
-                                    shop.useTagDiscount && (tagRolePriceDiscount > 0)
+                                description = `🏷️ ${shop.useTagDiscount && (tagRolePriceDiscount > 0)
                                         ? Math.floor(cost * (1 - tagRolePriceDiscount)).toLocaleString('en')
                                         : cost.toLocaleString('en')
                                     }`
@@ -286,9 +284,13 @@ const getShops = async (guildId: string) => {
 };
 
 export default new Command({
-    nameLocalizations: { fr: 'boutiques' },
-    description: 'Shops',
-    descriptionLocalizations: { fr: 'Boutiques' },
+    nameLocalizations: {
+        fr: 'boutiques'
+    },
+    description: '🛒 Browse and access the server shops',
+    descriptionLocalizations: {
+        fr: '🛒 Parcourir et accéder aux boutiques du serveur'
+    },
     access: {
         guild: {
             modules: {

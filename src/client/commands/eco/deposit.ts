@@ -74,12 +74,12 @@ const handleDepositCommand = async ({
 };
 
 export default new Command({
+    description: '🔐⬅️ Deposit your server coins to the vault',
     nameLocalizations: {
-        fr: 'boutiques'
+        fr: 'déposer'
     },
-    description: '🛒 Browse and access the server shops',
     descriptionLocalizations: {
-        fr: '🛒 Parcourir et accéder aux boutiques du serveur'
+        fr: '🔐⬅️ Déposer ses pièces de serveur dans le coffre-fort'
     },
     slashCommand: {
         arguments: [

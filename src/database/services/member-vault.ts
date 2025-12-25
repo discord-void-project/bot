@@ -9,6 +9,7 @@ import {
     MemberVaultUpsertArgs,
 } from '@/database/core/models'
 import { memberService } from './member'
+import { MemberVaultCapacityTier } from '../core/enums'
 
 export type MemberVaultCreateInputWithoutUserAndGuild = Omit<MemberVaultCreateInput, 'member'>
 
@@ -292,7 +293,7 @@ class MemberVaultService {
                 throw new Error('The vault is empty');
             }
 
-            let toWithdraw : number
+            let toWithdraw: number
 
             if (amount === 'all') {
                 toWithdraw = vault.guildCoins;
@@ -318,12 +319,34 @@ class MemberVaultService {
     }
 
     // -- Tiers -- //
-    async getNextTier() {
-        // 
+    async getNextTier(where: MemberVaultWhere) {
+        const memberBank = await this.findOrCreate(where);
+        const currentTier = memberBank.capacityTier;
+
+        const tiers = Object.values(MemberVaultCapacityTier);
+        const currentIndex = tiers.indexOf(currentTier);
+        const nextIndex = currentIndex + 1;
+
+        if (nextIndex >= tiers.length) {
+            return null;
+        }
+
+        const nextTier = tiers[nextIndex];
+
+        return {
+            value: nextTier,
+            cost: tierCapacityCost[nextTier],
+            capacity: tierCapacity[nextTier],
+        };
     }
 
-    async upgradeTier() {
-        // 
+    async upgradeTier(where: MemberVaultWhere) {
+        const newTier = await this.getNextTier(where);
+        if (!newTier) return;
+
+        return await this.updateOrCreate(where, {
+            capacityTier: newTier.value
+        });
     }
 
     async downgradeTier() {

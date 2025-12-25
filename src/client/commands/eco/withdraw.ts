@@ -1,8 +1,6 @@
 import { Command } from '@/structures/Command'
 
-import { memberService, memberVaultService } from '@/database/services'
-import { mainGuildConfig } from '@/client/config'
-
+import { memberVaultService } from '@/database/services'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 interface HandleWithdrawContext {

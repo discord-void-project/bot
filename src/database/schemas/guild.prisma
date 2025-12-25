@@ -15,7 +15,7 @@ model Guild {
     items            ShopItem[]
     modules          GuildModule[]
     blacklists       BlacklistGuild[]
-    dailyQuests      DailyQuest[]
+    dailyQuests      MemberDailyQuest[]
 
     createdAt DateTime @default(now())
 }

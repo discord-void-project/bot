@@ -11,9 +11,9 @@ export default new Command({
     nameLocalizations: {
         fr: 'voler'
     },
-    description: 'rob',
+    description: '🕵️ Attempt to steal coins from another player',
     descriptionLocalizations: {
-        fr: 'voler'
+        fr: '🕵️ Tenter de voler des pièces à un autre joueur'
     },
     slashCommand: {
         arguments: [

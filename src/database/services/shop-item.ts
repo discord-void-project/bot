@@ -62,6 +62,13 @@ class ShopItemService {
         });
     }
 
+    async allItems(guildId: string) {
+        return await this.model.findMany({
+            where: { guildId },
+            orderBy: { cost: 'asc' }
+        });
+    }
+
     async addOrUpdate(where: ShopItemWhere, data: Partial<ShopItemCreateInputWithoutGuildAndRoleId> & { cost: number }) {
         return await this.model.upsert({
             where: this._buildWhere(where),

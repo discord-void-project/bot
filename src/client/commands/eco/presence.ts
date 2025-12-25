@@ -15,8 +15,6 @@ import {
     randomNumber
 } from '@/utils'
 
-import { mainGuildConfig } from '@/client/config'
-
 const MIN_REWARD = 250;
 const MAX_REWARD = 750;
 

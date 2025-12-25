@@ -35,7 +35,10 @@ export const defaultEcoGuildModuleSettings = {
 
     // Shop
     isShopEnabled: false,
-    tagRolePriceDiscount: 0.15
+
+    // Discount
+    tagRolePriceDiscount: 0.15,
+    tagUpgradeDiscount: 0.15,
 }
 
 export const defaultLevelGuildModuleSettings = {

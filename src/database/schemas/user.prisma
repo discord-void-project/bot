@@ -3,7 +3,7 @@ model User {
     flags Int    @default(0)
 
     guilds      Member[]
-    dailyQuests DailyQuest[]
+    dailyQuests MemberDailyQuest[]
 
     blacklister Blacklist[] @relation("Mod")
     blacklisted Blacklist[] @relation("User")

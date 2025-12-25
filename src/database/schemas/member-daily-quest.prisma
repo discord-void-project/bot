@@ -1,4 +1,4 @@
-model DailyQuest {
+model MemberDailyQuest {
     userId String
     user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -17,5 +17,5 @@ model DailyQuest {
     lastCompletedAt DateTime?
 
     @@id([guildId, userId])
-    @@map("daily_quest")
+    @@map("member_daily_quest")
 }
