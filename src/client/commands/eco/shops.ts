@@ -289,7 +289,6 @@ export default new Command({
     nameLocalizations: { fr: 'boutiques' },
     description: 'Shops',
     descriptionLocalizations: { fr: 'Boutiques' },
-
     access: {
         guild: {
             modules: {
@@ -297,7 +296,6 @@ export default new Command({
             }
         }
     },
-
     async onInteraction(interaction) {
         if (!interaction.member) return;
 
