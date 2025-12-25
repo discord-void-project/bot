@@ -1,5 +1,5 @@
-import { Prisma } from '@prisma/client'
-import { UserFlagsBitField } from '@/database/utils'
+import { Prisma } from '../core/client'
+import { PrismaUserFlagsBitField } from '@/database/utils'
 
 export const userExtension = Prisma.defineExtension({
     result: {
@@ -7,7 +7,7 @@ export const userExtension = Prisma.defineExtension({
             flags: {
                 needs: { flags: true },
                 compute({ flags }) {
-                    return new UserFlagsBitField(flags);
+                    return new PrismaUserFlagsBitField(flags);
                 },
             },
         },

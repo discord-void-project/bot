@@ -1,0 +1,21 @@
+model MemberDailyQuest {
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    guildId String
+    guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+    guildPointsReward Int?
+    activityXpReward  Int?
+
+    voiceMinutesTarget Int?
+    messagesSentTarget Int?
+
+    voiceMinutesProgress Int @default(0)
+    messagesSentProgress Int @default(0)
+
+    lastCompletedAt DateTime?
+
+    @@id([guildId, userId])
+    @@map("member_daily_quest")
+}

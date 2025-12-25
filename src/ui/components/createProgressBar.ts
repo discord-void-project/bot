@@ -4,6 +4,7 @@ type ProgressBarOptions = {
     length?: number;
     filledChar?: string;
     emptyChar?: string;
+    asciiChar?: boolean;
     showPercentage?: boolean
 };
 
@@ -11,8 +12,8 @@ export const createProgressBar = (progress: number, options?: ProgressBarOptions
     const { whiteRectEmoji, greenRectEmoji } = applicationEmojiHelper();
 
     const length = options?.length ?? 10;
-    const filledChar = options?.filledChar ?? `${greenRectEmoji ?? '🟩'}`;
-    const emptyChar = options?.emptyChar ?? `${whiteRectEmoji ?? '⬜'}`;
+    const filledChar = options?.filledChar ?? `${options?.asciiChar ? '▰' : greenRectEmoji ?? '▰'}`;
+    const emptyChar = options?.emptyChar ?? `${options?.asciiChar ? '▱' : whiteRectEmoji ?? '▱'}`;
     const showPercentage = options?.showPercentage ?? false;
 
     const clamped = Math.max(0, Math.min(progress, 1));

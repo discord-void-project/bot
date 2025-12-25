@@ -1,34 +1,22 @@
 import { Event } from '@/structures'
-import { memberService } from '@/database/services'
 
 export default new Event({
-	name: 'voiceStateUpdate',
-	async run({ events: [oldState, newState] }) {
-		const userId = oldState.id;
+    name: 'voiceStateUpdate',
+    async run({ events: [oldState, newState] }) {
+        const userId = oldState.id;
+        const guildId = oldState.guild.id;
 
-		if (!oldState.channelId && newState.channelId) {
-			this.client.voiceSessions.set(userId, {
-				channelId: newState.channelId,
-				timestamp: Date.now()
-			});
-		} else if (oldState.channelId && !newState.channelId) {
-			const data = this.client.voiceSessions.get(userId);
-			if (!data?.timestamp || !data.channelId) return;
+        const manager = this.client.callSessions;
 
-			const minutesElapsed = Math.floor((Date.now() - data.timestamp) / 60000);
+        if (!oldState.channelId && newState.channelId) {
+            return manager.start(userId, newState);
+        }
 
-			await memberService.updateOrCreate(userId, oldState.guild.id, {
-				create: { voiceTotalMinutes: minutesElapsed },
-				update: { voiceTotalMinutes: { increment: minutesElapsed } }
-			});
+        if (oldState.channelId && !newState.channelId) {
+            await manager.flush(userId, guildId);
+            return manager.stop(userId);
+        }
 
-			this.client.voiceSessions.delete(userId);
-		} else if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
-			const data = this.client.voiceSessions.get(userId) ?? { timestamp: Date.now() };
-			this.client.voiceSessions.set(userId, {
-				channelId: newState.channelId,
-				timestamp: data.timestamp
-			});
-		}
-	}
+        return await manager.update(userId, newState);
+    }
 });

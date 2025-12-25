@@ -1,3 +1,4 @@
+import { Event } from '@/structures'
 import {
     BaseMessageOptions,
     ChatInputCommandInteraction,
@@ -5,22 +6,27 @@ import {
     Team
 } from 'discord.js'
 
-import { Event } from '@/structures'
 
-import prisma from '@/database/prisma'
-import { UserFlags } from '@/database/utils/UserFlags'
+import db from '@/database/db'
+import { guildModuleService } from '@/database/services'
+import { 
+    GuildModuleKeys,
+    GuildModuleName,
+    PrismaUserFlags
+} from '@/database/utils'
 
 import { EmbedUI } from '@/ui/EmbedUI'
+import { logger } from '@/utils'
 
 const replyBy = async (interaction: Message | ChatInputCommandInteraction, payload: BaseMessageOptions) => {
     try {
         if (interaction instanceof ChatInputCommandInteraction) {
-            return await interaction.reply(payload);
+            return await interaction[interaction.deferred ? 'editReply' : 'reply'](payload);
         } else if (interaction instanceof Message && interaction.channel.isSendable()) {
             return await interaction.reply(payload);
         }
-    } catch {
-        console.log('ERROR SLASH COMMAND 404');
+    } catch (ex) {
+        logger.error(ex);
     }
 }
 
@@ -29,7 +35,7 @@ export default new Event({
     async run({ events: [command, interaction, args] }) {
         const replyAuthorizationRefused = async (content: string[] | string, title?: string) => {
             if (!Array.isArray(content)) {
-                content = [ content ];
+                content = [content];
             }
 
             return await replyBy(interaction, {
@@ -58,7 +64,7 @@ export default new Event({
                 throw new Error('No guild or no user')
             };
 
-            const userDatabase = await prisma.user.findUnique({
+            const userDatabase = await db.user.findUnique({
                 where: {
                     id: user.id
                 }
@@ -71,51 +77,38 @@ export default new Event({
             const isDeveloper = (this.client.application!.owner as Team).members.has(user.id);
 
             if (access) {
-        //         if (access.guild) {
-        //             if (access.guild?.premium && !(await guildRepository.hasFeatures(guild.id, ['PREMIUM']))) {
-        //                 return await replyError([
-        //                     `${redBulletEmoji} Commande accessible uniquement aux communautés premium`
-        //                 ]);
-        //             }
+                if (access.guild) {
+                    if (access.guild.modules) {
+                        const moduleNames = Object.keys(access.guild.modules) as GuildModuleName[];
+                        const areModulesEnabled = await guildModuleService.areEnabled(guild.id, moduleNames, 'every');
+                        if (!areModulesEnabled) {
+                            return await replyAuthorizationRefused(
+                                'Un ou plusieurs modules requis sont désactivés par le gérant du serveur',
+                                'Module désactivé'
+                            );
+                        }
 
-        //             if (access.guild?.partner && !(await guildRepository.hasFeatures(guild.id, ['PARTNERED']))) {
-        //                 return await replyError([
-        //                     `${redBulletEmoji} Commande accessible uniquement aux communautés partenaire`
-        //                 ]);
-        //             }
+                        for (const moduleName of moduleNames) {
+                            const moduleFields = Object.keys(access.guild.modules[moduleName] as any) as GuildModuleKeys<typeof moduleName>[];
 
-        //             if (access.guild?.features && !(await guildRepository.hasFeatures(guild.id, access.guild.features))) {
-        //                 return await replyError([
-        //                     `${redBulletEmoji} Cette communauté doit posséder les fonctionnalités suivantes :`,
-        //                     access.guild.features
-        //                         .map((feature) => `${emptyEmoji}${graySubEntryEmoji} ${feature}`)
-        //                         .join('\n')
-        //                 ]);
-        //             }
+                            if (moduleFields.length === 0) continue;
 
-        //             if (access.guild.modules) {
-        //                 const moduleNames = Object.keys(access.guild.modules) as GuildModuleName[];
-        //                 const areModulesEnabled = await guildRepository.hasModulesEnabled(guild.id, moduleNames);
-        //                 const areModuleFieldsEnabled = await Promise.all(
-        //                     moduleNames.map(async (m) => {
-        //                         const fields = access.guild?.modules?.[m];
-        //                         if (!fields?.length) {
-        //                             return true;
-        //                         }
+                            const areFieldsEnabled = await guildModuleService.areSettingFieldEnabled(
+                                guild.id,
+                                moduleName,
+                                moduleFields,
+                                'every'
+                            );
 
-        //                         return await guildRepository.hasModuleConfigFieldsEnabled(guild.id, m, fields as any);
-        //                     })
-        //                 ).then((m) => m.every(Boolean));
-
-        //                 console.log(areModuleFieldsEnabled);
-
-        //                 if (!(areModulesEnabled && areModuleFieldsEnabled)) {
-        //                     return await replyError([
-        //                         `${redBulletEmoji} Un ou plusieurs modules requis sont désactivés par le gérant de cette communauté`
-        //                     ]);
-        //                 }
-        //             }
-        //         }
+                            if (!areFieldsEnabled) {
+                                return await replyAuthorizationRefused(
+                                    `Une ou plusieurs options lié à un module requis sont désactivés par le gérant du serveur`,
+                                    'Option de module désactivé'
+                                );
+                            }
+                        }
+                    }
+                }
 
                 if (access.channel) {
                     if (
@@ -133,11 +126,11 @@ export default new Event({
                     }
 
                     if (userDatabase && !isDeveloper) {
-                        if (access.user?.isStaff && !userDatabase.flags.has(UserFlags.STAFF)) {
-                            return await replyAuthorizationRefused(`Cette commande est accessible uniquement aux personnes ayant une haute autorité`);
+                        if (access.user?.isStaff && !userDatabase.flags.has(PrismaUserFlags.STAFF)) {
+                            return await replyAuthorizationRefused(`Cette commande est accessible uniquement aux personnes staff du bot`);
                         }
 
-                        if (access.user?.isBetaTester && !userDatabase.flags.has(UserFlags.BETA)) {
+                        if (access.user?.isBetaTester && !userDatabase.flags.has(PrismaUserFlags.BETA)) {
                             return await replyAuthorizationRefused(`Cette commande est accessible uniquement aux bêta-testeurs`);
                         }
                     }

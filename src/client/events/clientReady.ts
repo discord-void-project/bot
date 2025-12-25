@@ -1,7 +1,8 @@
+import { Collection } from 'discord.js'
 import { Event } from '@/structures'
 
 import { startAllJobs } from '@/client/jobs/index.js'
-import prisma from '@/database/prisma'
+import prisma from '@/database/db'
 
 export default new Event({
     once: true,

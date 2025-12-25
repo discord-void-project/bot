@@ -4,12 +4,13 @@ import {
     ActivityType,
     DiscordjsErrorCodes,
     DefaultWebSocketManagerOptions,
-    Collection,
     Guild,
     TextChannel,
+    Collection,
 } from 'discord.js'
 
 import {
+    CallSessionManager,
     CommandManager,
     EventManager,
 } from '@/client/managers'
@@ -26,8 +27,14 @@ export interface CustomClientMainGuildData {
     id: string;
     reportChannelId: string;
     welcomeChannelId: string;
-    deleteLogChannelId: string,
-    updateLogChannelId: string
+    deleteLogChannelId: string;
+    updateLogChannelId: string;
+}
+
+interface CustomClientSpamBufferData {
+    guildId: string;
+    lastMessageAt: number;
+    messageCount: number;
 }
 
 export class CustomClient extends Client {
@@ -40,10 +47,10 @@ export class CustomClient extends Client {
 
     isDatabaseConnected: boolean;
 
-    voiceSessions: Collection<string, { channelId: string; timestamp: number }>;
-
     events: EventManager;
     commands: CommandManager;
+    callSessions: CallSessionManager;
+    spamBuffer: Collection<string, CustomClientSpamBufferData>;
 
     logger: Logger;
 
@@ -81,7 +88,6 @@ export class CustomClient extends Client {
         return super.removeAllListeners(event as string);
     };
 
-
     constructor(options: ClientOptions) {
         super({
             ...options,
@@ -97,8 +103,9 @@ export class CustomClient extends Client {
 
         this.events = new EventManager(this);
         this.commands = new CommandManager(this);
+        this.callSessions = new CallSessionManager(this);
 
-        this.voiceSessions = new Collection();
+        this.spamBuffer = new Collection();
 
         this.logger = logger.use({
             prefix: (c) => c.white(`[CLIENT] <🤖>`)
@@ -178,7 +185,6 @@ export class CustomClient extends Client {
                     welcomeChannel: TextChannel;
                     deleteLogChannel: TextChannel;
                     updateLogChannel: TextChannel;
-
                 };
 
                 if (this.application) {

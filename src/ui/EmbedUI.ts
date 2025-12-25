@@ -3,7 +3,7 @@ import { EmbedBuilder, EmbedData } from 'discord.js'
 import { ColorName, COLORS } from '@/client/config'
 import { applicationEmojiHelper } from '@/helpers'
 
-type EmbedUIData = Omit<EmbedData, 'color'> & {
+export type EmbedUIData = Omit<EmbedData, 'color'> & {
     color?: ColorName | number | undefined
 };
 

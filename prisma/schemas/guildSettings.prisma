@@ -1,9 +1,0 @@
-model GuildSettings {
-    guildId String
-    name    String
-    options Json
-
-    guild Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
-
-    @@id([guildId, name])
-}

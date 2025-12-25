@@ -1,3 +1,3 @@
 export * from './member'
-export * from './memberBank'
+export * from './shop'
 export * from './user'

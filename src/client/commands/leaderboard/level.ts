@@ -1,113 +1,101 @@
 import { Command } from '@/structures/Command'
-import { Guild } from 'discord.js'
+import { GuildMember } from 'discord.js'
 
-import prisma from '@/database/prisma'
-import { mainGuildConfig } from '@/client/config/mainGuild'
+import db from '@/database/db'
+
 import { EmbedUI } from '@/ui/EmbedUI'
 
-interface HandleLeaderboardContext {
-    interactUserId: string;
-    guild: Guild | null;
-    reply: (data: any) => Promise<any>;
-}
+import { escapeAllMarkdown, getDominantColor } from '@/utils'
+import { applicationEmojiHelper, guildMemberHelperSync } from '@/helpers'
 
-const handleLevelLeaderboard = async ({
-    interactUserId,
-    guild,
-    reply
-}: HandleLeaderboardContext) => {
-    const allMembers = await prisma.member.findMany({
-        where: { guildId: guild!.id },
-        select: { userId: true, level: true }
-    });
+const buildEmbed = async (member: GuildMember) => {
+    const userId = member.user.id;
+    const guild = member.guild;
 
-    if (!allMembers.length) {
-        return reply({
-            embeds: [
-                EmbedUI.createMessage('Aucune donnée de niveaux', { color: 'orange' })
-            ]
-        });
-    }
+    const rankers = (await db.member.findMany({
+        where: { guildId: guild.id, activityXp: { gt: 0 } }
+    })).sort((a, b) => b.activityXp - a.activityXp);
 
-    const leaderboard = allMembers
-        .map((member) => ({
-            userId: member.userId,
-            level: member.level
-        }))
-        .filter(entry => entry.level > 0)
-        .sort((a, b) => b.level - a.level);
+    if (!rankers.length) return EmbedUI.createMessage('Aucune donnée', { color: 'orange' });
 
-    const totalLevels = leaderboard.reduce((sum, m) => sum + m.level, 0);
-
-    const medals = ['🥇', '🥈', '🥉'];
-
-    const description = await Promise.all(
-        leaderboard
-            .slice(0, 10)
-            .map(async (entry, index) => {
-                const member = await guild!.members.fetch(entry.userId).catch(() => null);
-                const username = member?.user.username ?? 'Utilisateur inconnu';
-                const place = index < 3 ? medals[index] : `**${index + 1}.**`;
-
-                return `${place} ${entry.userId === interactUserId ? `**${username}**` : `\`${username}\``} — niveau **\`${entry.level}\`** 📊`;
-            })
+    const topUserIds = rankers.slice(0, 10).map(r => r.userId);
+    const topMembersMap = new Map(
+        (await guild.members.fetch({ user: topUserIds }))
+            .filter(m => m && !m.user.bot)
+            .map(m => [m.user.id, m])
     );
 
-    let userPosition = '';
-    const userIndex = leaderboard.findIndex(entry => entry.userId === interactUserId);
+    const { whiteArrowEmoji } = applicationEmojiHelper();
+    const medals = ['🥇', '🥈', '🥉'];
 
-    if (userIndex >= 10) {
-        const userEntry = leaderboard[userIndex];
-        const place = `${userIndex + 1}`;
+    const top = rankers.slice(0, 10)
+        .filter(r => topMembersMap.has(r.userId))
+        .map((r, i) => {
+            const memberObj = topMembersMap.get(r.userId)!;
+            const memberHelper = guildMemberHelperSync(memberObj);
+            const place = medals[i] ?? `**${i + 1}**`;
+            const isAuthor = r.userId === userId;
+            const name = memberHelper.getName({ safe: true })
 
-        userPosition = `\n-# Tu es **\`${place}\`** avec le niveau **\`${userEntry.level}\`** 📊`;
-    }
+            return `- ${place} ${isAuthor ? `**\`${name}\`**` : `\`${name}\``} ${whiteArrowEmoji} Nv. **${r.activityLevel}**`;
+        }).join('\n');
 
-    return reply({
-        embeds: [
-            EmbedUI.createMessage({
-                color: 'orange',
-                title: '📊 Classement par niveau',
-                description: [
-                    `🧠 Niveaux cumulés sur le serveur : **${totalLevels.toLocaleString('fr-FR')}**\n`,
-                    ...description,
-                    userPosition
-                ].join('\n')
-            })
-        ]
+    const leaderboardIndex = rankers.findIndex(r => r.userId === userId);
+    const totalLevels = rankers.reduce((sum, r) => sum + r.activityLevel, 0);
+
+    const guildIcon = guild.iconURL();
+    const guildIconDominantColor = guildIcon ? await getDominantColor(guildIcon) : undefined;
+
+    const memberHelper = guildMemberHelperSync(member);
+
+    return EmbedUI.create({
+        title: `Classement des niveaux de ${escapeAllMarkdown(guild.name)}`,
+        color: guildIconDominantColor,
+        thumbnail: guildIcon ? { url: guildIcon } : undefined,
+        description: [
+            `> 🧠 **${totalLevels.toLocaleString('en')}** niveaux cumulés sur le serveur`,
+            topMembersMap.size < 10 ? `***TOP ${topMembersMap.size}***` : `***TOP 10 sur ${rankers.length.toLocaleString('en')} membres***`,
+            top,
+            leaderboardIndex >= 10 ? `- **..${leaderboardIndex + 1} \`${memberHelper.getName({ safe: true })}**\` ${whiteArrowEmoji} Nv. **${rankers[leaderboardIndex].activityLevel}**` : ''
+        ].join('\n'),
+        timestamp: Date.now()
     });
-};
+}
 
 export default new Command({
-    description: 'Classement par niveau des membres',
     nameLocalizations: {
         fr: 'niveaux'
     },
+    description: "🏆 Shows the top members by level",
     descriptionLocalizations: {
-        fr: 'Classement des membres par niveau'
-    },
-    messageCommand: {
-        aliases: ['toplevel', 'tlevel'],
+        fr: "🏆 Affiche le classement des meilleurs membres par niveau"
     },
     access: {
         guild: {
-            authorizedIds: [
-                mainGuildConfig.id
-            ]
+            modules: {
+                level: true
+            }
         }
     },
+    messageCommand: {
+        style: 'flat',
+        aliases: [
+            'toplevel',
+            'tlevel',
+            'tlvl'
+        ],
+    },
     async onInteraction(interaction) {
-        return handleLevelLeaderboard({
-            interactUserId: interaction.user.id,
-            guild: interaction.guild,
-            reply: (data) => interaction.reply(data)
+        await interaction.deferReply();
+        return await interaction.editReply({
+            allowedMentions: {},
+            embeds: [await buildEmbed(interaction.member)],
         });
     },
     async onMessage(message) {
-        return handleLevelLeaderboard({
-            interactUserId: message.author.id,
-            guild: message.guild,
-            reply: (data) => message.reply(data)
+        return await message.reply({
+            allowedMentions: {},
+            embeds: [await buildEmbed(message.member as GuildMember)],
         });
     }
 });

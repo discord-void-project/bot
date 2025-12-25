@@ -1,35 +1,42 @@
 import { Event } from '@/structures'
+
+import { guildService } from '@/database/services'
 import { EmbedUI } from '@/ui/EmbedUI'
 
 export default new Event({
     name: 'messageDelete',
     async run({ events: [message] }) {
-        if (!message.guild
-            || message.author?.bot
-            || !message.content
-            || this.client.mainGuild.id !== message.guild.id
-            || process.env.ENV == 'DEV'
-        ) return;
+        if (!message.guild || message.author?.bot || !message.content || message.channel.isDMBased()) return;
 
-        const logChannel = this.client.mainGuild.deleteLogChannel;
-        if (!logChannel) return;
+        const { messageDeletedAuditChannelId } = await guildService.findById(message.guild.id) ?? {};
+        if (!messageDeletedAuditChannelId) return;
 
-        return await logChannel.send({
+        const channel = message.guild.channels.cache.get(messageDeletedAuditChannelId);
+        if (!channel?.isTextBased()) return;
+
+        return await channel.send({
             embeds: [
                 EmbedUI.createMessage({
+                    color: 'red',
                     author: {
                         name: message.author!.username,
                         iconURL: message.author?.displayAvatarURL()
                     },
-                    description: `🗑️ **Message supprimé dans <#${message.channel.id}>**`,
-                    fields: [{
-                        name: 'Contenu',
-                        value: message.content.slice(0, 1024)
-                    }],
+                    description: `🗑️ **Message supprimé**`,
+                    fields: [
+                        {
+                            name: 'Salon',
+                            value: `<#${message.channel.id}> (\`${message.channel.name}\`)`,
+                        },
+                        {
+                            name: 'Contenu',
+                            value: message.content.slice(0, 1024)
+                        }
+                    ],
                     footer: {
                         text: `UID: ${message.author!.id}`
                     },
-                    timestamp: new Date().toISOString()
+                    timestamp: Date.now()
                 })
             ]
         });

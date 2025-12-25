@@ -1,10 +1,9 @@
 import { Command } from '@/structures/Command'
 
-import { memberService } from '@/database/services'
-import { mainGuildConfig } from '@/client/config'
-import { formatCompactNumber } from '@/utils'
+import { memberService } from '@/database/services/member'
 import { EmbedUI } from '@/ui/EmbedUI'
-import { memberBankService } from '@/database/services/memberBankService'
+
+import { formatCompactNumber } from '@/utils'
 
 interface HandleDepositContext {
     userId: string;
@@ -20,89 +19,67 @@ const handleDepositCommand = async ({
     amountInput,
     reply,
 }: HandleDepositContext) => {
-    const { member } = await memberService.findOrCreate(userId, guildId);
+    const member = await memberService.findOrCreate({
+        userId,
+        guildId
+    }, {
+        include: {
+            vault: {
+                select: {
+                    capacityTier: true
+                }
+            }
+        }
+    });
 
-    if (member.coins < 1) {
+    if (member.guildCoins <= 0) {
         return await reply({
             embeds: [
-                EmbedUI.createMessage(`❌ Vous n'avez rien à déposer en banque !`, { color: 'red' })
+                EmbedUI.createErrorMessage(`Vous n'avez aucune pièce de serveur à déposer dans votre coffre-fort !`)
             ]
         });
     }
 
-    let amount: number;
-
-    if (amountInput.toLowerCase() === 'all') {
-        amount = member.coins;
-    } else {
-        amount = Math.min(member.coins, parseInt(amountInput));
-        if (isNaN(amount) || amount <= 0) {
-            return await reply({
-                embeds: [
-                    EmbedUI.createMessage(`❌ Montant invalide`, { color: 'red' })
-                ],
-            });
-        }
-    }
-
-    if (member.coins < amount) {
-        return await reply({
+    if (amountInput !== 'all' && isNaN(+amountInput) || +amountInput <= 0) {
+        return reply({
             embeds: [
-                EmbedUI.createMessage({
-                    color: 'red',
-                    title: '❌ Fonds insuffisants',
-                    description: `Tu n'as que **${member.coins}** pièces dans ton portefeuille.`,
-                })
+                EmbedUI.createErrorMessage(`Montant invalide`)
             ],
         });
     }
 
-    const memberBank = await memberBankService.findOrCreate(userId, guildId);
+    try {
+        const { deposited } = await memberService.depositGuildCoins({
+            userId,
+            guildId
+        }, amountInput as number | 'all');
 
-    if (memberBank.funds > memberBank.maxCapacity) {
-        const maxDeposit = memberBank.maxCapacity - memberBank.funds;
-        if (maxDeposit <= 0) {
-            return await reply({
-                embeds: [
-                    EmbedUI.createErrorMessage(`Ta banque est déjà pleine, c'est **${formatCompactNumber(memberBank.maxCapacity)}** le max :(`)
-                ],
-            });
-        } else {
-            amount = maxDeposit;
-        }
+
+        return await reply({
+            embeds: [
+                EmbedUI.createMessage({
+                    color: 'green',
+                    title: '🏦 Dépôt effectué',
+                    description: `Tu as déposé **${formatCompactNumber(deposited)}** pièces de serveur dans ton coffre-fort`,
+                })
+            ],
+        });
+    } catch (ex) {
+        return await reply({
+            embeds: [
+                EmbedUI.createErrorMessage(`Tu ne peux pas mettre plus de pièces de serveur dans ton coffre-fort`)
+            ],
+        });
     }
-
-    await memberService.updateOrCreate(userId, guildId, {
-        update: {
-            coins: { decrement: amount },
-            bank: {
-                update: {
-                    funds: {
-                        increment: amount
-                    }
-                }
-            },
-        },
-    });
-
-    return await reply({
-        embeds: [
-            EmbedUI.createMessage({
-                color: 'green',
-                title: '🏦 Dépôt effectué',
-                description: `Tu as déposé **${amount}** pièces dans ta banque.`,
-            })
-        ],
-    });
 };
 
 export default new Command({
-    description: 'Deposit money from your wallet to your bank',
+    description: '🔐⬅️ Deposit your server coins to the vault',
     nameLocalizations: {
         fr: 'déposer'
     },
     descriptionLocalizations: {
-        fr: 'Dépose des pièces de ton portefeuille vers ta banque'
+        fr: '🔐⬅️ Déposer ses pièces de serveur dans le coffre-fort'
     },
     slashCommand: {
         arguments: [
@@ -110,20 +87,23 @@ export default new Command({
                 type: 3,
                 name: 'amount',
                 description: 'The amount to deposit or "all"',
+                description_localizations: {
+                    fr: 'Le montant à déposer ou " all"'
+                },
                 required: true,
             }
         ]
     },
+    access: {
+        guild: {
+            modules: {
+                eco: true
+            }
+        }
+    },
     messageCommand: {
         style: 'flat',
         aliases: ['deposit', 'dep'],
-    },
-    access: {
-        guild: {
-            authorizedIds: [
-                mainGuildConfig.id
-            ]
-        }
     },
     async onInteraction(interaction) {
         const amountInput = interaction.options.getString('amount', true);

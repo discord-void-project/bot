@@ -1,35 +1,78 @@
 import { Event, MessageCommandStyle } from '@/structures'
 
 import {
-    guildIgnoredChannelService,
-    guildLevelRewardService,
-    guildSettingsService,
-    memberService
+    userService,
+    memberService,
+    guildModuleService,
+    channelBlacklistService,
 } from '@/database/services'
 
+import {
+    getDominantColor,
+    levelToXp,
+    randomNumber,
+    timeElapsedFactor,
+    xpToLevel
+} from '@/utils'
+
 import { levelUpCard } from '@/ui/assets/cards/levelUpCard'
+import { applicationEmojiHelper, guildMemberHelperSync } from '@/helpers'
+import { handleMemberRoleRewardSync } from '@/client/handlers/member-role-reward-sync'
 
-import { getDominantColor } from '@/utils/image'
-import { levelToXp, xpToLevel } from '@/utils/math'
-
-import { guildMemberHelper } from '@/helpers'
-import { dateElapsedRatio } from '@/utils'
-
+/** @deprecated */
 const channelsAutomaticThread = [
     '1351619802002886706',
     '1405139939988996207'
 ]
 
-const MAX_TAG_BOOST = 0.1;
+const factor = (condition: any, value = 0) => condition ? value : 0;
+
+const isAtMaxLevel = (maxLevel: number, currentLevel: number) => {
+    return maxLevel && currentLevel ? currentLevel >= maxLevel : false
+}
 
 export default new Event({
     name: 'messageCreate',
     async run({ events: [message] }) {
         if (message.author.bot || !message.guild) return;
 
+        const userId = message.author.id;
+        const guild = message.guild
+        const guildId = guild.id;
+        const channelId = message.channel.id;
+
+        const channelScopeBlacklist = await channelBlacklistService.findMany({ guildId, channelId });
+
+        const now = Date.now();
+
+        let userSpamData = this.client.spamBuffer.get(userId);
+
+        if (userSpamData && userSpamData.guildId === guildId) {
+            const elapsed = now - userSpamData.lastMessageAt;
+
+            if (elapsed < 750) {
+                userSpamData.messageCount++;
+            } else {
+                userSpamData.messageCount = 0;
+            }
+
+            userSpamData.lastMessageAt = now;
+            this.client.spamBuffer.set(userId, userSpamData);
+        } else {
+            userSpamData = {
+                guildId,
+                lastMessageAt: now,
+                messageCount: 0,
+            }
+
+            this.client.spamBuffer.set(userId, userSpamData);
+        }
+
         const prefix = process.env.PREFIX;
 
-        if (message.content.startsWith(prefix)) {
+        const messageStartsWithPrefix = message.content.startsWith(prefix)
+
+        if (messageStartsWithPrefix && !channelScopeBlacklist.COMMAND) {
             let args = message.content
                 .slice(prefix.length)
                 .trim()
@@ -53,126 +96,152 @@ export default new Event({
             return this.client.emit('commandCreate', command, message, args);
         }
 
-        if (this.client.mainGuild.id !== message.guild.id) return;
+        if (this.client.mainGuild.id === guildId) {
+            if (process.env.ENV === 'PROD' && channelsAutomaticThread.includes(message.channel.id)) {
+                return await message.startThread({
+                    name: `Discussion avec ${message.author.username}`,
+                });
+            }
+        };
 
-        const userId = message.author.id;
-        const guildId = message.guild!.id;
-
-        if (process.env.ENV === 'PROD' && channelsAutomaticThread.includes(message.channel.id)) {
-            return await message.startThread({
-                name: `Discussion avec ${message.author.username}`,
-            });
+        if (!messageStartsWithPrefix) {
+            await memberService.incrementMessageCount({ userId, guildId });
         }
 
-        const member = await memberService.updateOrCreate(userId, guildId, {
-            update: {
-                messageCount: {
-                    increment: 1
-                }
-            },
-            create: {
-                messageCount: 1
-            },
-            include: {
-                user: true
-            }
-        });
+        const [
+            userDatabase,
+            memberDatabase,
+            guildEcoModule,
+            guildLevelModule
+        ] = await Promise.all([
+            userService.findById(userId),
+            memberService.findById({ guildId, userId }),
+            guildModuleService.findById({ guildId, moduleName: 'eco' }),
+            guildModuleService.findById({ guildId, moduleName: 'level' }),
+        ]);
 
-        const ratio = member.user?.tagAssignedAt
-            ? dateElapsedRatio(new Date(member.user.tagAssignedAt), 14)
-            : 0;
+        const guildBoostElapsedProgress = timeElapsedFactor(message?.member?.premiumSince, 7);
+        const tagBoostElapsedProgress = timeElapsedFactor(userDatabase?.tagAssignedAt, 14);
 
-        const tagBoostValue = ratio ? 1 + (ratio * MAX_TAG_BOOST) : 1;
+        if (guildEcoModule?.isActive && !channelScopeBlacklist.ECONOMY) {
+            const { settings } = guildEcoModule;
 
-        const {
-            progression: progressionSettings,
-            eco: ecoSettings,
-        } = await guildSettingsService.findManyOrCreate(guildId, ['progression', 'eco'])
-        if (!progressionSettings || !ecoSettings) return;
+            if (settings?.guildPointsFromMessageEnabled) {
+                if (Math.random() < settings.messageChance) {
+                    const maxGain = settings.messageMaxGain;
+                    const minGain = settings.messageMinGain;
 
-        const isIgnoredProgressionChannel = await guildIgnoredChannelService.has(guildId, 'progression', message.channel.id);
-        const isIgnoredEcoPChannel = await guildIgnoredChannelService.has(guildId, 'progression', message.channel.id);
+                    // Penalty
+                    const spamFactor = factor(userSpamData.messageCount, userSpamData.messageCount / 5);
 
-        if (!isIgnoredEcoPChannel) {
-            if (ecoSettings.isActive) {
-                if (ecoSettings.isCoinsMessageEnabled) {
-                    if (Math.random() < (ecoSettings.messageLuck / 100)) {
-                        const maxGain = ecoSettings.messageMaxGain;
-                        const minGain = ecoSettings.messageMinGain;
+                    // Bonus
+                    const guildBoostFactor = factor(settings.boosterFactor, guildBoostElapsedProgress * settings.boosterFactor);
+                    const tagBoostFactor = factor(settings.tagSupporterFactor, tagBoostElapsedProgress * settings.tagSupporterFactor);
 
-                        const randomCoins = Math.floor((Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain) * tagBoostValue);
+                    const bonusFactor = tagBoostFactor + guildBoostFactor;
 
-                        await memberService.updateOrCreate(userId, guildId, {
-                            create: {
-                                coins: randomCoins
-                            },
-                            update: {
-                                coins: {
-                                    increment: randomCoins
-                                }
-                            }
-                        })
+                    const randomCoins = Math.floor(randomNumber(minGain, maxGain) * (1 + (bonusFactor)) * (1 - spamFactor));
+
+                    if (randomCoins > 0) {
+                        await memberService.addGuildCoins({
+                            userId,
+                            guildId,
+                        }, randomCoins);
                     }
                 }
             }
         }
 
-        if (!isIgnoredProgressionChannel) {
-            if (progressionSettings.isActive) {
-                if (progressionSettings.isXpMessageEnabled) {
-                    let reachLevelMax = progressionSettings.maxLevel && member.level >= progressionSettings.maxLevel
+        if (guildLevelModule?.isActive && !channelScopeBlacklist.LEVEL) {
+            const { settings } = guildLevelModule;
 
-                    if (!reachLevelMax && (Math.random() < (progressionSettings.messageLuck / 100))) {
-                        const maxGain = progressionSettings.messageMaxGain;
-                        const minGain = progressionSettings.messageMinGain;
+            if (settings?.isXpFromMessageEnabled) {
+                const currentLevel = memberDatabase?.activityLevel ?? 1;
+                let reachLevelMax = isAtMaxLevel(settings.maxLevel, currentLevel);
 
-                        const randomXP = Math.floor((Math.floor(Math.random() * (maxGain - minGain + 1)) + minGain) * tagBoostValue);
+                if (!reachLevelMax && (Math.random() < settings.messageChance)) {
+                    const maxGain = 125;
+                    const minGain = 75;
 
-                        const currentLevel = xpToLevel(member.xp);
-                        const newXP = member.xp + randomXP;
-                        const newLevel = xpToLevel(newXP);
+                    // Penalty
+                    const spamFactor = factor(userSpamData.messageCount, userSpamData.messageCount / 5);
 
-                        reachLevelMax = progressionSettings.maxLevel && newLevel >= progressionSettings.maxLevel;
+                    // Bonus
+                    const guildBoostFactor = factor(settings.boosterFactor, guildBoostElapsedProgress * settings.boosterFactor);
+                    const tagBoostFactor = factor(settings.tagSupporterFactor, tagBoostElapsedProgress * settings.tagSupporterFactor);
+
+                    const bonusFactor = tagBoostFactor + guildBoostFactor;
+
+                    const randomXP = Math.floor(randomNumber(minGain, maxGain) * (1 + (bonusFactor)) * (1 - spamFactor));
+
+                    if (randomXP > 0) {
+                        const currentXP = memberDatabase?.activityXp ?? 0;
+                        const newLevel = xpToLevel(currentXP + randomXP);
+
+                        reachLevelMax = isAtMaxLevel(settings.maxLevel, newLevel);
 
                         if (reachLevelMax) {
-                            const amount = levelToXp(progressionSettings.maxLevel);
+                            const xpMaxLevel = levelToXp(settings.maxLevel);
 
-                            await memberService.setXp(userId, guildId, amount);
+                            await memberService.setActivityXp({
+                                userId,
+                                guildId,
+                            }, xpMaxLevel);
                         } else {
-                            await memberService.addXp(userId, guildId, randomXP);
+                            await memberService.addActivityXp({
+                                userId,
+                                guildId,
+                            }, randomXP);
                         }
 
-                        if (newLevel > currentLevel) {
-                            let rewards = await guildLevelRewardService.findMany(guildId);
-                            if (rewards.length) {
-                                rewards = rewards.filter(({ atLevel }) => {
-                                    return atLevel <= newLevel
-                                });
+                        if (currentLevel < newLevel) {
+                            const { greenArrowEmoji } = applicationEmojiHelper();
 
-                                const rolesReward = await Promise.all(
-                                    rewards
-                                        .filter(({ roleId }) => roleId && !message.member?.roles.cache.get(roleId))
-                                        .map(async ({ roleId }) => {
-                                            return await message.guild!.roles.fetch(roleId!)
-                                        })
-                                );
+                            const rewards = await handleMemberRoleRewardSync({
+                                guild,
+                                member: message.member!,
+                                activityLevel: newLevel
+                            });
 
-                                if (rolesReward) {
-                                    await message.member?.roles.add(rolesReward as any);
-                                }
-                            };
-
-
-                            const memberHelper = await guildMemberHelper(message.member!);
+                            const memberHelper = guildMemberHelperSync(message.member!);
                             const displayLevel = reachLevelMax ? 'MAX' : newLevel;
 
-                            await message.channel.send({
-                                content: `<@${userId}> Nv. **${currentLevel}** ➔ Nv. **${displayLevel}** 🎉`,
+                            const messageLines = [
+                                `Nv. **${currentLevel}** ➔ Nv. **${displayLevel}** 🎉`,
+                            ];
+
+                            if (rewards.roleIds.length === 1) {
+                                messageLines.push(`> 🏅 Nouveau rôle débloqué ${greenArrowEmoji} <@&${rewards.roleIds[0]}>`);
+                            } else if (rewards.roleIds.length > 1) {
+                                messageLines.push(`> 🏅 Nouveaux rôles débloqué :`);
+                                for (const roleId of rewards.roleIds) {
+                                    messageLines.push(`> - <@&${roleId}>`);
+                                }
+                            }
+
+                            if (guildEcoModule?.isActive && rewards?.totalGuildPoints) {
+                                await memberService.addGuildCoins({
+                                    guildId,
+                                    userId
+                                }, rewards.totalGuildPoints);
+
+                                messageLines.push(`> 💰 Gain de pièce de serveur ${greenArrowEmoji} **${rewards.totalGuildPoints.toLocaleString('en')}**`);
+                            }
+
+                            await message.reply({
+                                content: messageLines.join('\n'),
+                                allowedMentions: {
+                                    roles: [],
+                                    users: [message.member!.id],
+                                    repliedUser: true
+                                },
                                 files: [{
                                     attachment: await levelUpCard({
-                                        username: memberHelper.getName() ?? 'unknown',
+                                        username: memberHelper.getName({ safe: true }),
                                         avatarURL: memberHelper.getAvatarURL(),
-                                        accentColor: message.member!.roles.color?.hexColor ?? await getDominantColor(memberHelper.getAvatarURL(), false),
+                                        accentColor: message.member?.roles.color?.hexColor ?? await getDominantColor(memberHelper.getAvatarURL(), {
+                                            returnRGB: false
+                                        }),
                                         newLevel: displayLevel,
                                     }),
                                     name: 'levelUpCard.png'
@@ -182,7 +251,6 @@ export default new Event({
                     }
                 }
             }
-
         }
     }
 });

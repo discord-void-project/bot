@@ -1,20 +1,40 @@
 import { Command } from '@/structures/Command'
-import { memberService, userService } from '@/database/services'
+
+import {
+    guildModuleService,
+    memberService,
+    memberVaultService,
+    tierCapacity
+} from '@/database/services'
+import { userService } from '@/database/services'
 
 import { ApplicationCommandOptionType, MessageFlags } from 'discord.js'
-import { memberBankService } from '@/database/services'
 
-import { createButton, createSection, createSeparator, createTextDisplay } from '@/ui/components/common'
 import { ContainerUI } from '@/ui'
+import {
+    createButton,
+    createSection,
+    createSeparator,
+    createTextDisplay
+} from '@/ui/components/common'
 
 import { applicationEmojiHelper } from '@/helpers'
-import { formatCompactNumber } from '@/utils'
-
-const UPGRADE_DISCOUNT = 0.15;
+import { formatCompactNumber, timeElapsedFactor } from '@/utils'
 
 export default new Command({
     nameLocalizations: {
         fr: 'améliorer'
+    },
+    description: '🛠️ Upgrade your economy features',
+    descriptionLocalizations: {
+        fr: '🛠️ Améliorer différents éléments liés à l’économie'
+    },
+    access: {
+        guild: {
+            modules: {
+                eco: true
+            }
+        }
     },
     slashCommand: {
         arguments: [
@@ -24,9 +44,9 @@ export default new Command({
                 description: 'Type d’amélioration',
                 choices: [
                     {
-                        name: 'bank',
-                        name_localizations: { fr: 'banque' },
-                        value: 'bank'
+                        name: 'Vault',
+                        name_localizations: { fr: 'Coffre-Fort' },
+                        value: 'vault'
                     }
                 ],
                 required: true
@@ -41,15 +61,18 @@ export default new Command({
         const userId = interaction.user.id;
         const guildId = interaction.guildId;
 
-        switch (upgradeType) {
-            case 'bank': {
-                const { member } = await memberService.findOrCreate(userId, guildId);
-                const memberBank = await memberBankService.findOrCreate(userId, guildId);
-                const totalFunds = member.coins + memberBank.funds;
+        const guildEcoModule = await guildModuleService.findById({
+            guildId,
+            moduleName: 'eco'
+        });
 
-                const baseNextTier = await memberBankService.getNextTier(userId, guildId);
-                const tagBoostValue = await userService.getTagBoost(userId);
-                const discount = tagBoostValue * UPGRADE_DISCOUNT;
+        switch (upgradeType) {
+            case 'vault': {
+                const userDatabase = await userService.findById(userId);
+                const baseNextTier = await memberVaultService.getNextTier({ userId, guildId });
+                const memberGuildPoints = await memberService.getTotalGuildCoins({ userId, guildId });
+
+                const discount = timeElapsedFactor(userDatabase?.tagAssignedAt, 14) * (guildEcoModule?.settings?.tagUpgradeDiscount ?? 0);
 
                 const nextTier = baseNextTier
                     ? {
@@ -60,13 +83,11 @@ export default new Command({
                     : null;
 
                 const loadComponents = async () => {
-                    const { member } = await memberService.findOrCreate(userId, guildId);
-                    const memberBank = await memberBankService.findOrCreate(userId, guildId);
-                    const totalFunds = member.coins + memberBank.funds;
-
-                    const baseNextTier = await memberBankService.getNextTier(userId, guildId);
-                    const tagBoostValue = await userService.getTagBoost(userId);
-                    const discount = tagBoostValue * UPGRADE_DISCOUNT;
+                    const userDatabase = await userService.findById(userId);
+                    const memberGuildPoints = await memberService.getTotalGuildCoins({ userId, guildId });
+                    const memberVault = await memberVaultService.findById({ userId, guildId });
+                    const baseNextTier = await memberVaultService.getNextTier({ userId, guildId });
+                    const discount = timeElapsedFactor(userDatabase?.tagAssignedAt, 14) * (guildEcoModule?.settings?.tagUpgradeDiscount ?? 0);
 
                     const nextTier = baseNextTier
                         ? {
@@ -76,15 +97,17 @@ export default new Command({
                         }
                         : null;
 
-                    const currentTierLevel = memberBank.tier.split('_')[1] ?? '?';
+                    const currentTierLevel = memberVault.capacityTier.split('_')[1] ?? '?';
 
                     const upgradeButton = nextTier
                         ? createButton('Améliorer', {
                             color: 'green',
                             customId: 'upgrade',
-                            disabled: nextTier.cost > totalFunds
+                            disabled: nextTier.cost > memberGuildPoints.total
                         })
                         : createButton('MAX', 'upgrade', { color: 'gray', disabled: true });
+
+                    const currentMaxCapacity = tierCapacity[memberVault.capacityTier]?.guildCoins?.capacity;
 
                     return [
                         ContainerUI.create({
@@ -102,8 +125,8 @@ export default new Command({
                                                 ? `~~${formatCompactNumber(nextTier.baseCost)}~~ **${formatCompactNumber(nextTier.cost)} -${(discount * 100).toFixed(2)}%**`
                                                 : `**${formatCompactNumber(nextTier.baseCost)}**`}`,
                                             nextTier
-                                                ? `📦 Capacité ${whiteArrowEmoji} **${formatCompactNumber(memberBank.maxCapacity)}** ➜ **${formatCompactNumber(nextTier.capacity)}**`
-                                                : `📦 Capacité ${whiteArrowEmoji} **${formatCompactNumber(memberBank.maxCapacity)}**`
+                                                ? `📦 Capacité ${whiteArrowEmoji} **${formatCompactNumber(currentMaxCapacity)}** ➜ **${formatCompactNumber(nextTier.capacity.guildCoins.capacity)}**`
+                                                : `📦 Capacité ${whiteArrowEmoji} **${formatCompactNumber(currentMaxCapacity)}**`
                                         ].filter(Boolean).join('\n')),
                                     ]
                                 }),
@@ -117,7 +140,7 @@ export default new Command({
                     components: await loadComponents()
                 });
 
-                if (!nextTier || nextTier.cost > totalFunds) return;
+                if (!nextTier || nextTier.cost > memberGuildPoints.total) return;
 
                 const collector = msg.createMessageComponentCollector({
                     filter: (i) => i.user.id === userId,
@@ -127,11 +150,8 @@ export default new Command({
                 collector.on('collect', async (i) => {
                     collector.resetTimer();
 
-                    await memberBankService.upgradeTier(userId, guildId);
-                    await memberService.pay(userId, guildId, nextTier.cost, {
-                        bank: true,
-                        coins: true
-                    });
+                    await memberVaultService.upgradeTier({ userId, guildId });
+                    await memberService.removeGuildCoinsWithVault({ userId, guildId }, nextTier.cost);
 
                     return await i.update({ components: await loadComponents() });
                 });

@@ -1,7 +1,7 @@
 import { Command } from '@/structures/Command'
 
 import { userService } from '@/database/services'
-import { UserFlags, UserFlagsString } from '@/database/utils'
+import { PrismaUserFlags, PrismaUserFlagsString } from '@/database/utils'
 
 import { createActionRow, createButton } from '@/ui/components/common'
 import { EmbedUI } from '@/ui/EmbedUI'
@@ -30,13 +30,13 @@ export default new Command({
             ]
         });
 
-        const flagName = grade.toUpperCase() as UserFlagsString;
-        if (!(flagName in UserFlags)) return await message.reply({
+        const flagName = grade.toUpperCase() as PrismaUserFlagsString;
+        if (!(flagName in PrismaUserFlags)) return await message.reply({
             embeds: [
                 EmbedUI.createMessage({
                     color: 'red',
                     title: "❌ Erreur d'attribution d’autorité",
-                    description: `Je ne connais pas cette autorité, voici ceux que je reconnais **${Object.keys(UserFlags).join(', ')}**`
+                    description: `Je ne connais pas cette autorité, voici ceux que je reconnais **${Object.keys(PrismaUserFlags).join(', ')}**`
                 })
             ]
         });
@@ -52,9 +52,7 @@ export default new Command({
             ]
         });
 
-        await userService.update(userId, {
-            flags: userDatabase.flags.add(flagName).bitfield
-        });
+        await userService.addFlag(userId, flagName);
 
         const msg = await message.reply({
             content: `Parfait, j'ai attribué l'autorité **${flagName}** à <@${userId}> \`(${userId})\` !`,
