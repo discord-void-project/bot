@@ -1,3 +1,4 @@
+import { Collection } from 'discord.js'
 import { Event } from '@/structures'
 
 import { startAllJobs } from '@/client/jobs/index.js'

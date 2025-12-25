@@ -5,6 +5,7 @@ import logger from '@/utils/logger'
 
 import {
     userExtension,
+    shopExtension,
     memberExtension,
 } from './extensions'
 
@@ -18,6 +19,7 @@ const adapter = new PrismaMariaDb({
 
 const prisma = new PrismaClient({ adapter })
     .$extends(userExtension)
+    .$extends(shopExtension)
     .$extends(memberExtension);
 
 export default Object.assign(prisma, {

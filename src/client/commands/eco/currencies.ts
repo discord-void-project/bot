@@ -45,7 +45,7 @@ const buildEmbed = async (member: GuildMember) => {
                 name: 'Pièces de Serveur',
                 value: [
                     `- 🔐️ Coffre-Fort ${whiteArrowEmoji} **${formatCompactNumber(memberGuildCoins.inVault)}** / **${formatCompactNumber(vaultGuildCoinsCapacity)}**`,
-                    `- 💼 Solde ${whiteArrowEmoji} **${formatCompactNumber(memberGuildCoins.inWallet)}**`,
+                    `- :coin: Solde ${whiteArrowEmoji} **${formatCompactNumber(memberGuildCoins.inWallet)}**`,
                     (
                         (formatCompactNumber(memberGuildCoins.inVault) != formatCompactNumber(memberGuildCoins.total))
                         && (formatCompactNumber(memberGuildCoins.inWallet) != formatCompactNumber(memberGuildCoins.total))

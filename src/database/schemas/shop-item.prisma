@@ -6,7 +6,6 @@ model ShopItem {
     shop     Shop   @relation(fields: [guildId, shopName], references: [guildId, name], onDelete: Cascade)
 
     roleId      String
-    name        String?
     description String?
     cost        Int
     stock       Int?
@@ -14,5 +13,5 @@ model ShopItem {
     createdAt DateTime @default(now())
 
     @@id([guildId, roleId])
-    @@map("guild_shop_item")
+    @@map("shop_item")
 }

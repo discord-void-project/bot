@@ -20,7 +20,6 @@ const handleWorkCommand = async ({
     const memberKey = { userId, guildId }
 
     const member = await memberService.findOrCreate(memberKey);
-    // const ecoSettings = { workerData };
 
     const COOLDOWN = (30) * 60 * 1000;
     const MIN_REWARD = 25;

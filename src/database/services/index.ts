@@ -11,5 +11,6 @@ export * from './member'
 export * from './member-vault'
 export * from './member-bank'
 // Others
+export * from './shop'
 export * from './shop-item'
 export * from './user'

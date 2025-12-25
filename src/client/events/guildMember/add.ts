@@ -16,7 +16,7 @@ export default new Event({
                     guildId: guild.id,
                     userId: member.id
                 });
-                
+
                 if (!guildBlacklist?.accepted) {
                     await member.ban({
                         reason: blacklist.reason ?? 'Aucune raisons spécifiée'

@@ -105,7 +105,7 @@ export class CustomClient extends Client {
         this.commands = new CommandManager(this);
         this.callSessions = new CallSessionManager(this);
 
-        this.spamBuffer = new Collection<string, CustomClientSpamBufferData>();
+        this.spamBuffer = new Collection();
 
         this.logger = logger.use({
             prefix: (c) => c.white(`[CLIENT] <🤖>`)
@@ -185,7 +185,6 @@ export class CustomClient extends Client {
                     welcomeChannel: TextChannel;
                     deleteLogChannel: TextChannel;
                     updateLogChannel: TextChannel;
-
                 };
 
                 if (this.application) {
