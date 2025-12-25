@@ -27,5 +27,5 @@ model MemberVault {
     guildCoins Int @default(0)
 
     @@id([userId, guildId])
-    @@map("member_bank")
+    @@map("member_vault")
 }
