@@ -7,23 +7,20 @@ import { applicationEmojiHelper, guildMemberHelper } from '@/helpers'
 import { EmbedUI, EmbedUIData } from '@/ui/EmbedUI'
 
 import {
-    createCooldown,
     formatCompactNumber,
     formatTimeLeft,
-    getDateByLocale,
     getDominantColor,
-    randomNumber
+    randomNumber,
+    tzMap
 } from '@/utils'
+import { DateTime } from 'luxon'
 
 const MIN_REWARD = 250;
 const MAX_REWARD = 750;
 
 const STREAK_STEP = 7;
 
-const ONE_DAY_COLDOWN = 24 * 60 * 60 * 1000;
-
 const getStreakDay = (streak: number) => streak % STREAK_STEP || STREAK_STEP;
-const checkIsSameDay = (last: Date | null, now: number) => last && now - last.getTime() <= ONE_DAY_COLDOWN;
 
 const buildEmbed = async (member: GuildMember) => {
     const { whiteArrowEmoji } = applicationEmojiHelper();
@@ -31,6 +28,7 @@ const buildEmbed = async (member: GuildMember) => {
     const userId = member.user.id;
     const guildId = member.guild.id;
     const guildLocale = member.guild.preferredLocale;
+    const guildTZ = tzMap[guildLocale] || 'UTC';
 
     const memberKey = { userId, guildId }
 
@@ -39,12 +37,12 @@ const buildEmbed = async (member: GuildMember) => {
 
     let { dailyStreak, lastAttendedAt } = await memberService.findOrCreate(memberKey);
 
-    const lastAttendedAtDate = lastAttendedAt && getDateByLocale(member.guild.preferredLocale, lastAttendedAt);
-    const nowTZ = getDateByLocale(guildLocale).getTime();
-    const todayTZ = getDateByLocale(guildLocale);
-    todayTZ.setHours(24, 0, 0, 0);
+    const lastInGuildTZ = lastAttendedAt ? DateTime.fromJSDate(lastAttendedAt, { zone: guildTZ }) : null;
+    const nowInGuildTZ = DateTime.now().setZone(guildTZ);
 
-    const midnightTZ = todayTZ.getTime();
+    const midnightInGuildTZ = nowInGuildTZ.endOf('day');
+
+    const isSameDay = lastInGuildTZ ? lastInGuildTZ.hasSame(nowInGuildTZ, 'day') : false;
 
     let message: string;
 
@@ -59,17 +57,16 @@ const buildEmbed = async (member: GuildMember) => {
         }
     } as Partial<EmbedUIData>
 
-    const { isActive, expireTimestamp } = createCooldown(lastAttendedAtDate, midnightTZ - nowTZ);
-
     const getDailyStreakDay = () => Math.min(dailyStreak % 7, 7);
 
-    if (isActive) {
+    if (isSameDay) {
         payload.color = memberAvatarDominantColor;
-        message = `Vous devez attendre encore ${formatTimeLeft(expireTimestamp, nowTZ)} avant de refaire valoir votre présence !`;
+        message = `Vous devez attendre encore ${formatTimeLeft(midnightInGuildTZ.toMillis(), nowInGuildTZ.toMillis())} avant de refaire valoir votre présence !`;
     } else {
-        const isSameDay = checkIsSameDay(lastAttendedAtDate, nowTZ);
+        const yesterdayInGuildTZ = nowInGuildTZ.minus({ days: 1 });
+        const isSameDayAsYesterday = lastInGuildTZ ? lastInGuildTZ.hasSame(yesterdayInGuildTZ, 'day') : false;
 
-        const data = isSameDay
+        const data = isSameDayAsYesterday
             ? await memberService.incrementDailyStreak(memberKey)
             : await memberService.resetDailyStreak(memberKey);
 
