@@ -17,9 +17,10 @@ COPY prisma.config.ts ./
 RUN npx prisma generate
 
 COPY src ./src
-COPY src/ui/assets/fonts ./build/ui/assets/fonts
 
 RUN npx tsup && npx tsc-alias
+
+COPY src/ui/assets/fonts ./build/ui/assets/fonts
 
 FROM node:24-alpine
 
