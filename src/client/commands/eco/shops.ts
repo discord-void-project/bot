@@ -361,8 +361,6 @@ export default new Command({
                 guildId
             })).total;
 
-            console.log(tagBoostPercent, guildEcoModule?.settings?.tagRolePriceDiscount, userDatabase?.tagAssignedAt)
-
             return buildShopView({
                 shop: state.shop,
                 items: state.items,
@@ -457,7 +455,8 @@ export default new Command({
                     }
 
                     if (!item) {
-                        return await i.reply({
+                        await refreshShop();
+                        return await i.followUp({
                             flags: MessageFlags.Ephemeral,
                             embeds: [
                                 EmbedUI.createErrorMessage({
@@ -469,7 +468,8 @@ export default new Command({
                     }
 
                     if (i.member.roles.cache.get(item.roleId)) {
-                        return await i.reply({
+                        await refreshShop();
+                        return await i.followUp({
                             flags: MessageFlags.Ephemeral,
                             embeds: [
                                 EmbedUI.createErrorMessage(`Vous possédez déjà cet article !`)
@@ -499,7 +499,8 @@ export default new Command({
                     })).total;
 
                     if (item.cost > totalGuildPoints) {
-                        return await i.reply({
+                        await refreshShop();
+                        return await i.followUp({
                             flags: MessageFlags.Ephemeral,
                             embeds: [
                                 EmbedUI.createErrorMessage(`Vous n'avez pas assez de pièce de serveur pour acheter cet article`)
@@ -508,7 +509,8 @@ export default new Command({
                     }
 
                     if (typeof item.stock === 'number' && item.stock <= 0) {
-                        return await i.reply({
+                        await refreshShop();
+                        return await i.followUp({
                             flags: MessageFlags.Ephemeral,
                             embeds: [
                                 EmbedUI.createErrorMessage(`Cet article ne possède plus de stock, merci d'attendre les restocks !`)
