@@ -64,6 +64,14 @@ class GuildService {
     async setMessageEditedAuditChannel(guildId: string, channelId: string | null) {
         return await this.createOrUpdate(guildId, { messageEditedAuditChannelId: channelId });
     }
+
+    async setLastEventAt(guildId: string, date?: Date | null) {
+        if (date === undefined) {
+            date = new Date();
+        }
+        
+        return await this.createOrUpdate(guildId, { lastEventAt: date });
+    }
 }
 
 export const guildService = new GuildService(db.guild);

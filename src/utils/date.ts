@@ -40,7 +40,7 @@ export const getDateByLocale = (locale: Locale, date?: Date | null) => {
     return new Date(date.toLocaleString('en-US', { timeZone: tzMap[locale] }));
 }
 
-export const createCooldown = (timestamp: Date | string | null, duration: number) => {
+export const createCooldown = (timestamp: Date | string | null | undefined, duration: number) => {
     const cooldownEndTimestamp = timestamp ? new Date(timestamp).getTime() + duration : duration;
 
     return {

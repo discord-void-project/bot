@@ -1,3 +1,4 @@
+import { applicationEmojiHelper } from '@/helpers';
 import { Command } from '@/structures/Command'
 import { EmbedUI } from '@/ui/EmbedUI'
 
@@ -10,18 +11,48 @@ export default new Command({
     messageCommand: {
         style: 'slashCommand'
     },
-    async onMessage(message) {
+    async onMessage(message, { args: [channelId] }) {
         const sessions = this.client.callSessions.cache;
-        const totalSessions = sessions.size;
-        const inSession = sessions.has(message.author.id);
 
-        const sampleSessions = [...sessions.entries()].slice(0, 10);
+        const guild = message.guild;
+        if (!guild) return;
+
+        const { whiteArrowEmoji } = applicationEmojiHelper();
+
+        let targetChannelId: string | null = null;
+        let targetLabel = 'Guilde entière';
+
+        if (channelId) {
+            targetChannelId = channelId;
+            const channel = guild.channels.cache.get(channelId);
+            if (channel) {
+                targetLabel = `Salon ${whiteArrowEmoji} **\`${channel.name}\`**`;
+            }
+        } else if (message.member?.voice?.channelId) {
+            targetChannelId = message.member.voice.channelId;
+            const channel = guild.channels.cache.get(targetChannelId);
+            if (channel) {
+                targetLabel = `Salon ${whiteArrowEmoji} **\`${channel.name}\`**`;
+            }
+        }
+
+        const filteredSessions = [...sessions.entries()].filter(([_, session]) => {
+            if (targetChannelId) {
+                return session.channelId === targetChannelId;
+            }
+            
+            return session.guildId === guild.id;
+        });
+
+        const totalSessions = filteredSessions.length;
+        const inSession = sessions.has(message.author.id);
+        const sampleSessions = filteredSessions.slice(0, 10);
 
         return await message.reply({
             embeds: [
                 EmbedUI.create({
                     color: 'indigo',
-                    title: '🔍 Debug des sessions vocales',
+                    title: '🔍 Debug - Sessions Vocales',
                     fields: [
                         {
                             name: '📊 Nombre total de sessions',
@@ -34,12 +65,15 @@ export default new Command({
                             inline: true
                         },
                         {
+                            name: '📍 Filtre actif',
+                            value: targetLabel
+                        },
+                        {
                             name: '🆔 Aperçu des sessions',
                             value: sampleSessions.length > 0
                                 ? sampleSessions
                                     .map(([id, session]) => {
                                         const member = this.client.users.cache.get(id);
-
                                         const flags = session.flags;
 
                                         const statusEmojis = [
@@ -54,7 +88,7 @@ export default new Command({
                                         return `\`${member?.username ?? 'Unknown'}\` (${id}) • ${statusEmojis} • ⏱️ ${timeAgo}`;
                                     })
                                     .join('\n')
-                                : 'Aucune session est actuellement actif'
+                                : 'Aucune session active'
                         }
                     ],
                     footer: {

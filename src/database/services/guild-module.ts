@@ -45,6 +45,26 @@ class GuildModuleService {
         }
     }
 
+    private _normalizeSettings<ModuleName extends GuildModuleName>(
+        moduleName: ModuleName,
+        oldSettings?: Partial<GuildModuleSettings<ModuleName>>,
+        newSettings?: Partial<GuildModuleSettings<ModuleName>>
+    ): GuildModuleSettings<ModuleName> {
+        const defaultSettings = defaultGuildModuleSettings[moduleName];
+
+        const merged = {
+            ...defaultSettings,
+            ...oldSettings,
+            ...newSettings
+        };
+
+        const allowedKeys = Object.keys(defaultSettings);
+
+        return Object.fromEntries(
+            Object.entries(merged).filter(([key]) => allowedKeys.includes(key))
+        ) as GuildModuleSettings<ModuleName>;
+    }
+
     // -- CRUD -- //
     async findById<ModuleName extends GuildModuleName>(where: GuildModuleWhere<ModuleName>) {
         return await this.model.findUnique({
@@ -56,20 +76,25 @@ class GuildModuleService {
         where: GuildModuleWhere<ModuleName>,
         data?: Partial<GuildModuleCreateInputWithoutGuildAndName<ModuleName>>
     ) {
+        const settings = this._normalizeSettings<ModuleName>(
+            where.moduleName,
+            {},
+            data?.settings as any
+        );
+
         return await this.model.upsert({
             where: this._buildWhere(where),
             update: {},
             create: {
                 ...data,
-                settings: (data?.settings ?? defaultGuildModuleSettings[where.moduleName]) as any,
+                settings,
                 guild: {
                     connectOrCreate: {
                         where: { id: where.guildId },
                         create: { id: where.guildId }
                     }
                 },
-                name: where.moduleName,
-                ...data
+                name: where.moduleName
             }
         }) as (Omit<GuildModuleModel, 'settings'> & Required<GuildModuleSettings<ModuleName>>);
     }
@@ -78,34 +103,30 @@ class GuildModuleService {
         where: GuildModuleWhere<ModuleName>,
         data?: Partial<GuildModuleCreateInputWithoutGuildAndName<ModuleName>>
     ) {
-        const defaultSettings = defaultGuildModuleSettings[where.moduleName];
-        const oldSettings = await this.findOrCreate<ModuleName>(where);
+        const existing = await this.findOrCreate<ModuleName>(where);
 
-        const settingsMerged = { ...oldSettings, ...data?.settings ?? {} };
-        const settingsAllowed = Object.keys(defaultSettings);
-
-        const validSettings = Object.fromEntries(
-            Object.entries(settingsMerged).filter(([k]) => settingsAllowed.includes(k))
+        const settings = this._normalizeSettings(
+            where.moduleName,
+            existing.settings as any,
+            data?.settings as any
         );
-
-        const cleanSettings = { ...defaultSettings, ...validSettings };
 
         return await this.model.upsert({
             where: this._buildWhere(where),
             update: {
                 ...data,
-                settings: cleanSettings
+                settings
             },
             create: {
                 ...data,
-                settings: cleanSettings,
+                settings,
                 guild: {
                     connectOrCreate: {
                         where: { id: where.guildId },
                         create: { id: where.guildId }
                     }
                 },
-                name: where.moduleName,
+                name: where.moduleName
             }
         }) as (Omit<GuildModuleModel, 'settings'> & Required<GuildModuleSettings<ModuleName>>);
     }

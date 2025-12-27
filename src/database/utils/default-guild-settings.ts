@@ -63,9 +63,28 @@ export const defaultLevelGuildModuleSettings = {
     maxLevel: 100,
 }
 
+export const defaultEventGuildModuleSettings = {
+    // Global
+    randomEventCooldownMinutes: 180,
+    randomEventChance: 0.05,
+
+    // Coins
+    isCoinEventEnabled: true,
+    coinsChance: 0.4,
+    coinsMinGain: 1_000,
+    coinsMaxGain: 2_000,
+
+    // XP
+    isXpEventEnabled: true,
+    xpChance: 0.6,
+    xpMinGain: 500,
+    xpMaxGain: 800,
+}
+
 export const defaultGuildModuleSettings = {
     eco: defaultEcoGuildModuleSettings,
-    level: defaultLevelGuildModuleSettings
+    level: defaultLevelGuildModuleSettings,
+    event: defaultEventGuildModuleSettings
 };
 
 export type GuildModuleName = keyof typeof defaultGuildModuleSettings;

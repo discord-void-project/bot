@@ -1,6 +1,6 @@
 {
 	"name": "void",
-	"version": "1.8.3",
+	"version": "1.8.6",
 	"description": "A discord bot project",
 	"license": "GPL-3.0-only",
 	"type": "module",

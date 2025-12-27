@@ -19,7 +19,7 @@ export default new Command({
             return await message.reply({
                 embeds: [
                     EmbedUI.createErrorMessage({
-                        title: '🔍 Debug des sessions vocales',
+                        title: '🔍 Debug - Sessions Vocales',
                         description: `Oups.. Cette commande s'utilise sur des salons vocaux`
                     })
                 ]
@@ -34,7 +34,7 @@ export default new Command({
                 embeds: [
                     EmbedUI.create({
                         color: 'red',
-                        title: '🔍 Debug des sessions vocales',
+                        title: '🔍 Debug - Sessions Vocales',
                         description: `Les **${membersToAdd.size}** membres sont déjà synchro en cache :)`
                     })
                 ]
@@ -49,7 +49,7 @@ export default new Command({
             embeds: [
                 EmbedUI.create({
                     color: 'green',
-                    title: '🔍 Debug des sessions vocales',
+                    title: '🔍 Debug - Sessions Vocales',
                     description: `Les **${membersToAdd.size}** membres pas synchro sont maintenant en cache ;)`
                 })
             ]

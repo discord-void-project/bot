@@ -29,4 +29,5 @@ model Member {
     vault MemberVault?
 
     @@id([userId, guildId])
+    @@map("member")
 }

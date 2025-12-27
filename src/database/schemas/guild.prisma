@@ -8,6 +8,9 @@ model Guild {
     messageDeletedAuditChannelId String?
     messageEditedAuditChannelId  String?
 
+    lastEventAt DateTime?
+    createdAt   DateTime  @default(now())
+
     members          Member[]
     levelRewards     GuildLevelReward[]
     channelBlacklist ChannelBlacklist[]
@@ -17,5 +20,5 @@ model Guild {
     blacklists       BlacklistGuild[]
     dailyQuests      MemberDailyQuest[]
 
-    createdAt DateTime @default(now())
+    @@map("guild")
 }
