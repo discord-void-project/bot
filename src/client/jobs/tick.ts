@@ -10,6 +10,7 @@ import { applicationEmojiHelper, guildMemberHelperSync } from '@/helpers'
 import { getDominantColor, levelToXp, randomNumber, timeElapsedFactor, xpToLevel } from '@/utils'
 import { channelBlacklistService } from '@/database/services/channel-blacklist'
 import { handleMemberRoleRewardSync } from '../handlers/member-role-reward-sync'
+import { handleMemberCheckLevelUp } from '../handlers/member-check-level-up'
 
 jobsLogger.borderBox('🔗 » Tick Job started');
 
@@ -91,10 +92,8 @@ cron.schedule('* * * * *', async () => {
                 const { settings } = guildLevelModule;
 
                 if (settings?.isXpFromMessageEnabled) {
-                    const currentLevel = memberDatabase?.activityLevel ?? 1;
-                    let reachLevelMax = isAtMaxLevel(settings.maxLevel, currentLevel);
+                    if ((minutesElapsed % settings.callGainIntervalMinutes) === 0) {
 
-                    if (!reachLevelMax && (minutesElapsed % settings.callGainIntervalMinutes) === 0) {
                         const maxGain = 250;
                         const minGain = 150;
 
@@ -111,86 +110,22 @@ cron.schedule('* * * * *', async () => {
                         const cameraBoostFactor = factor(session.flags.hasCamera, settings.callCameraBonus);
                         const streamBoostFactor = factor(session.flags.isStreaming, settings.callStreamBonus);
 
-                        const bonusFactor = tagBoostFactor + guildBoostFactor + cameraBoostFactor + streamBoostFactor;
+                        const bonusFactor =
+                            tagBoostFactor +
+                            guildBoostFactor +
+                            cameraBoostFactor +
+                            streamBoostFactor;
 
-                        const randomXP = Math.floor(randomNumber(minGain, maxGain) * (1 + (bonusFactor)) * (1 - (penaltyFactor)));
+                        const randomXP = Math.floor(
+                            randomNumber(minGain, maxGain) * (1 + bonusFactor) * (1 - penaltyFactor)
+                        );
 
                         if (randomXP > 0) {
-                            const currentXP = memberDatabase?.activityXp ?? 0;
-                            const newLevel = xpToLevel(currentXP + randomXP);
-
-                            reachLevelMax = isAtMaxLevel(settings.maxLevel, newLevel);
-
-                            if (reachLevelMax) {
-                                const xpMaxLevel = levelToXp(settings.maxLevel);
-
-                                await memberService.setActivityXp({
-                                    userId,
-                                    guildId,
-                                }, xpMaxLevel);
-                            } else {
-                                await memberService.addActivityXp({
-                                    userId,
-                                    guildId,
-                                }, randomXP);
-                            }
-
-                            if ((currentLevel < newLevel) && member) {
-                                const { greenArrowEmoji } = applicationEmojiHelper();
-
-                                const rewards = await handleMemberRoleRewardSync({
-                                    guild,
-                                    member,
-                                    activityLevel: newLevel
-                                });
-
-                                const memberHelper = guildMemberHelperSync(member);
-                                const displayLevel = reachLevelMax ? 'MAX' : newLevel;
-
-                                const messageLines = [
-                                    `<@${userId}> Nv. **${currentLevel}** ➔ Nv. **${displayLevel}** 🎉`,
-                                ];
-
-                                if (rewards.roleIds.length === 1) {
-                                    messageLines.push(`> 🏅 Nouveau rôle débloqué ${greenArrowEmoji} <@&${rewards.roleIds[0]}>`);
-                                } else if (rewards.roleIds.length > 1) {
-                                    messageLines.push(`> 🏅 Nouveaux rôles débloqué :`);
-                                    for (const roleId of rewards.roleIds) {
-                                        messageLines.push(`> - <@&${roleId}>`);
-                                    }
-                                }
-
-                                if (guildEcoModule?.isActive && rewards?.totalGuildPoints) {
-                                    await memberService.addGuildCoins({
-                                        guildId,
-                                        userId
-                                    }, rewards.totalGuildPoints);
-
-                                    messageLines.push(`> 💰 Gain de pièce de serveur ${greenArrowEmoji} **${rewards.totalGuildPoints.toLocaleString('en')}**`);
-                                }
-
-                                const channel = guild.channels.cache.get(session.channelId);
-                                if (channel?.isSendable()) {
-                                    await channel.send({
-                                        content: messageLines.join('\n'),
-                                        allowedMentions: {
-                                            roles: [],
-                                            users: [userId]
-                                        },
-                                        files: [{
-                                            attachment: await levelUpCard({
-                                                username: memberHelper.getName({ safe: true }),
-                                                avatarURL: memberHelper.getAvatarURL(),
-                                                accentColor: member?.roles.color?.hexColor ?? await getDominantColor(memberHelper.getAvatarURL(), {
-                                                    returnRGB: false
-                                                }),
-                                                newLevel: displayLevel,
-                                            }),
-                                            name: 'levelUpCard.png'
-                                        }]
-                                    });
-                                }
-                            }
+                            await handleMemberCheckLevelUp({
+                                member,
+                                channel: guild.channels.cache.get(session.channelId),
+                                xpGain: randomXP
+                            });
                         }
                     }
                 }

@@ -9,7 +9,6 @@ model Shop {
     name        String
     description String?
     emoji       String?
-    iconUrl     String?
     bannerUrl   String?
 
     expiresAt DateTime?

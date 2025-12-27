@@ -5,19 +5,19 @@ import {
     memberService,
     guildModuleService,
     channelBlacklistService,
+    guildService,
 } from '@/database/services'
 
 import {
-    getDominantColor,
-    levelToXp,
+    createCooldown,
     randomNumber,
     timeElapsedFactor,
-    xpToLevel
 } from '@/utils'
 
-import { levelUpCard } from '@/ui/assets/cards/levelUpCard'
-import { applicationEmojiHelper, guildMemberHelperSync } from '@/helpers'
-import { handleMemberRoleRewardSync } from '@/client/handlers/member-role-reward-sync'
+import { EmbedUI } from '@/ui'
+import { createActionRow, createButton } from '@/ui/components/common'
+
+import { handleMemberCheckLevelUp } from '@/client/handlers/member-check-level-up'
 
 /** @deprecated */
 const channelsAutomaticThread = [
@@ -27,14 +27,10 @@ const channelsAutomaticThread = [
 
 const factor = (condition: any, value = 0) => condition ? value : 0;
 
-const isAtMaxLevel = (maxLevel: number, currentLevel: number) => {
-    return maxLevel && currentLevel ? currentLevel >= maxLevel : false
-}
-
 export default new Event({
     name: 'messageCreate',
     async run({ events: [message] }) {
-        if (message.author.bot || !message.guild) return;
+        if (message.author.bot || !message.guild || !message.member) return;
 
         const userId = message.author.id;
         const guild = message.guild
@@ -96,7 +92,7 @@ export default new Event({
             return this.client.emit('commandCreate', command, message, args);
         }
 
-        if (this.client.mainGuild.id === guildId) {
+        if (this.client.mainGuild?.id === guildId) {
             if (process.env.ENV === 'PROD' && channelsAutomaticThread.includes(message.channel.id)) {
                 return await message.startThread({
                     name: `Discussion avec ${message.author.username}`,
@@ -110,15 +106,152 @@ export default new Event({
 
         const [
             userDatabase,
-            memberDatabase,
+            guildDatabase,
             guildEcoModule,
-            guildLevelModule
+            guildLevelModule,
+            guildEventModule,
         ] = await Promise.all([
             userService.findById(userId),
-            memberService.findById({ guildId, userId }),
+            guildService.findById(guildId),
             guildModuleService.findById({ guildId, moduleName: 'eco' }),
             guildModuleService.findById({ guildId, moduleName: 'level' }),
+            guildModuleService.findById({ guildId, moduleName: 'event' })
         ]);
+
+        if (guildEventModule?.isActive && guildEventModule.settings) {
+            const { settings } = guildEventModule;
+
+            const { isActive } = createCooldown(
+                guildDatabase?.lastEventAt,
+                guildEventModule.settings.randomEventCooldownMinutes * 60 * 1000
+            );
+
+            if (!isActive && (Math.random() < settings.randomEventChance)) {
+                const chance = Math.random();
+
+                if (
+                    settings.isCoinEventEnabled
+                    && (chance < settings.coinsChance)
+                ) {
+                    await guildService.setLastEventAt(guild.id);
+                    const randomCoins = randomNumber(settings.coinsMinGain, settings.coinsMaxGain);
+
+                    const msg = await message.channel.send({
+                        embeds: [
+                            EmbedUI.create({
+                                color: 'yellow',
+                                title: '💰 Une opportunité se présente',
+                                description: `Alors que vous marchez dans la ville, vous remarquez une **bourse abandonnée** au sol, que voulez-vous faire ?`
+                            })
+                        ],
+                        components: [
+                            createActionRow([
+                                createButton({
+                                    color: 'gray',
+                                    label: `Prendre la bourse abandonnée`,
+                                    customId: 'take'
+                                }),
+                                createButton({
+                                    color: 'gray',
+                                    label: `Inspecter la zone`,
+                                    customId: 'inspect'
+                                })
+                            ])
+                        ]
+                    });
+
+                    try {
+                        const i = await msg.awaitMessageComponent({ time: 30_000 });
+
+                        let coinsGained = randomCoins;
+                        let title = '💰 Opportunité réussie';
+                        let description = '';
+
+                        if (i.customId === 'take') {
+                            description = `${i.user} décide de prendre la bourse abandonnée et de l'ouvrir. À l'intérieur, vous trouvez **${coinsGained.toLocaleString('en')} pièces** !`;
+                        } else if (i.customId === 'inspect') {
+                            const RNG = Math.random();
+
+                            if (RNG < 0.3) {
+                                coinsGained += Math.floor(coinsGained * 0.25);
+                                description = `${i.user} décide d'inspecter les alentours, vous remarquez une grand-mère à la recherche de quelque chose. Vous lui demandez si elle a perdu la bourse et elle vous répond que oui. Soulagée, elle vous laisse garder la bourse et vous donne un peu plus d'argent. Vous gagnez **${coinsGained.toLocaleString('en')} pièces** !`;
+                            } else {
+                                description = `${i.user} inspecte les alentours mais ne voyez personne. Vous ouvrez donc la bourse abandonnée et découvrez **${coinsGained.toLocaleString('en')} pièces** à l'intérieur !`;
+                            }
+                        }
+
+                        await memberService.addGuildCoins({ guildId, userId: i.user.id }, coinsGained);
+
+                        await i.update({
+                            embeds: [EmbedUI.createSuccessMessage({ title, description })],
+                            components: []
+                        });
+                    } catch {
+                        await guildService.setLastEventAt(guild.id, null);
+                        if (msg.deletable) {
+                            await msg.delete();
+                        }
+                    }
+                } else if (
+                    settings.isXpEventEnabled
+                    && (chance < settings.xpChance)
+                ) {
+                    await guildService.setLastEventAt(guild.id);
+                    const randomXp = randomNumber(settings.xpMinGain, settings.xpMaxGain);
+
+                    const msg = await message.channel.send({
+                        embeds: [
+                            EmbedUI.create({
+                                color: 'blue',
+                                title: '✨ Une opportunité d’apprentissage !',
+                                description: `Alors que vous explorez les environs, vous trouvez un ancien grimoire posé sur un banc. Cliquez pour l’ouvrir et en découvrir le contenu !`
+                            })
+                        ],
+                        components: [
+                            createActionRow([
+                                createButton({
+                                    color: 'gray',
+                                    label: 'Lire le grimoire',
+                                    customId: 'read_grimoire'
+                                })
+                            ])
+                        ]
+                    });
+
+                    try {
+                        const i = await msg.awaitMessageComponent({ time: 30_000 });
+
+                        let xpGained = randomXp;
+                        let title = '✨ Lecture réussie';
+                        let description = '';
+
+                        const RNG = Math.random();
+                        if (RNG < 0.3) {
+                            xpGained += Math.floor(xpGained * 0.25);
+                            description = `${i.user} décide de lire le grimoire, vous découvrez des secrets cachés ! Grâce à votre perspicacité, vous gagnez **${xpGained.toLocaleString('en')} XP** !`;
+                        } else {
+                            description = `${i.user} décide de lire le grimoire de manière attentive, le grimoire vous transmets de grandes connaissance. Vous gagnez **${xpGained.toLocaleString('en')} XP** !`;
+                        }
+
+                        await handleMemberCheckLevelUp({
+                            member: guild.members.cache.get(i.user.id),
+                            channel: message.channel,
+                            xpGain: xpGained
+                        });
+
+                        await i.update({
+                            embeds: [EmbedUI.createSuccessMessage({ title, description })],
+                            components: []
+                        });
+                    } catch {
+                        await guildService.setLastEventAt(guild.id, null);
+                        if (msg.deletable) {
+                            await msg.delete();
+                        }
+                    }
+                }
+            }
+        }
 
         const guildBoostElapsedProgress = timeElapsedFactor(message?.member?.premiumSince, 7);
         const tagBoostElapsedProgress = timeElapsedFactor(userDatabase?.tagAssignedAt, 14);
@@ -155,100 +288,29 @@ export default new Event({
         if (guildLevelModule?.isActive && !channelScopeBlacklist.LEVEL) {
             const { settings } = guildLevelModule;
 
-            if (settings?.isXpFromMessageEnabled) {
-                const currentLevel = memberDatabase?.activityLevel ?? 1;
-                let reachLevelMax = isAtMaxLevel(settings.maxLevel, currentLevel);
+            if (settings?.isXpFromMessageEnabled && Math.random() < settings.messageChance) {
+                const maxGain = 125;
+                const minGain = 75;
 
-                if (!reachLevelMax && (Math.random() < settings.messageChance)) {
-                    const maxGain = 125;
-                    const minGain = 75;
+                // Penalty
+                const spamFactor = factor(userSpamData.messageCount, userSpamData.messageCount / 5);
 
-                    // Penalty
-                    const spamFactor = factor(userSpamData.messageCount, userSpamData.messageCount / 5);
+                // Bonus
+                const guildBoostFactor = factor(settings.boosterFactor, guildBoostElapsedProgress * settings.boosterFactor);
+                const tagBoostFactor = factor(settings.tagSupporterFactor, tagBoostElapsedProgress * settings.tagSupporterFactor);
 
-                    // Bonus
-                    const guildBoostFactor = factor(settings.boosterFactor, guildBoostElapsedProgress * settings.boosterFactor);
-                    const tagBoostFactor = factor(settings.tagSupporterFactor, tagBoostElapsedProgress * settings.tagSupporterFactor);
+                const bonusFactor = tagBoostFactor + guildBoostFactor;
 
-                    const bonusFactor = tagBoostFactor + guildBoostFactor;
+                const randomXP = Math.floor(
+                    randomNumber(minGain, maxGain) * (1 + bonusFactor) * (1 - spamFactor)
+                );
 
-                    const randomXP = Math.floor(randomNumber(minGain, maxGain) * (1 + (bonusFactor)) * (1 - spamFactor));
-
-                    if (randomXP > 0) {
-                        const currentXP = memberDatabase?.activityXp ?? 0;
-                        const newLevel = xpToLevel(currentXP + randomXP);
-
-                        reachLevelMax = isAtMaxLevel(settings.maxLevel, newLevel);
-
-                        if (reachLevelMax) {
-                            const xpMaxLevel = levelToXp(settings.maxLevel);
-
-                            await memberService.setActivityXp({
-                                userId,
-                                guildId,
-                            }, xpMaxLevel);
-                        } else {
-                            await memberService.addActivityXp({
-                                userId,
-                                guildId,
-                            }, randomXP);
-                        }
-
-                        if (currentLevel < newLevel) {
-                            const { greenArrowEmoji } = applicationEmojiHelper();
-
-                            const rewards = await handleMemberRoleRewardSync({
-                                guild,
-                                member: message.member!,
-                                activityLevel: newLevel
-                            });
-
-                            const memberHelper = guildMemberHelperSync(message.member!);
-                            const displayLevel = reachLevelMax ? 'MAX' : newLevel;
-
-                            const messageLines = [
-                                `Nv. **${currentLevel}** ➔ Nv. **${displayLevel}** 🎉`,
-                            ];
-
-                            if (rewards.roleIds.length === 1) {
-                                messageLines.push(`> 🏅 Nouveau rôle débloqué ${greenArrowEmoji} <@&${rewards.roleIds[0]}>`);
-                            } else if (rewards.roleIds.length > 1) {
-                                messageLines.push(`> 🏅 Nouveaux rôles débloqué :`);
-                                for (const roleId of rewards.roleIds) {
-                                    messageLines.push(`> - <@&${roleId}>`);
-                                }
-                            }
-
-                            if (guildEcoModule?.isActive && rewards?.totalGuildPoints) {
-                                await memberService.addGuildCoins({
-                                    guildId,
-                                    userId
-                                }, rewards.totalGuildPoints);
-
-                                messageLines.push(`> 💰 Gain de pièce de serveur ${greenArrowEmoji} **${rewards.totalGuildPoints.toLocaleString('en')}**`);
-                            }
-
-                            await message.reply({
-                                content: messageLines.join('\n'),
-                                allowedMentions: {
-                                    roles: [],
-                                    users: [message.member!.id],
-                                    repliedUser: true
-                                },
-                                files: [{
-                                    attachment: await levelUpCard({
-                                        username: memberHelper.getName({ safe: true }),
-                                        avatarURL: memberHelper.getAvatarURL(),
-                                        accentColor: message.member?.roles.color?.hexColor ?? await getDominantColor(memberHelper.getAvatarURL(), {
-                                            returnRGB: false
-                                        }),
-                                        newLevel: displayLevel,
-                                    }),
-                                    name: 'levelUpCard.png'
-                                }]
-                            });
-                        }
-                    }
+                if (randomXP > 0) {
+                    await handleMemberCheckLevelUp({
+                        member: message.member,
+                        channel: message.channel,
+                        xpGain: randomXP
+                    });
                 }
             }
         }

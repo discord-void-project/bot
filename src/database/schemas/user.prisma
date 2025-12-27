@@ -10,4 +10,6 @@ model User {
 
     tagAssignedAt DateTime?
     createdAt     DateTime  @default(now())
+
+    @@map("user")
 }
